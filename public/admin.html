@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LivestockMart - Admin App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        /* Simple Modal */
+        .modal { display: none; position: fixed; z-index: 50; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: white; margin: 10% auto; padding: 20px; border-radius: 8px; width: 400px; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-900 h-screen flex overflow-hidden">
+
+    <!-- Admin Sidebar -->
+    <aside class="w-64 bg-white border-r border-gray-200 flex flex-col z-10 hidden md:flex">
+        <div class="p-6 flex items-center gap-3">
+            <div class="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">L</div>
+            <div>
+                <span class="block text-lg font-bold text-gray-800 leading-none">LivestockMart</span>
+                <span class="text-xs text-gray-500 font-medium">Admin</span>
+            </div>
+        </div>
+
+        <nav class="flex-1 px-4 space-y-2 mt-4">
+            <button onclick="adminRouter('dashboard')" class="admin-nav-item w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-green-50 hover:text-green-700 rounded-lg transition-colors">
+                <i data-lucide="bar-chart-2" class="w-5 h-5"></i> Dashboard
+            </button>
+            <button onclick="adminRouter('livestock')" class="admin-nav-item w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-green-50 hover:text-green-700 rounded-lg transition-colors">
+                <i data-lucide="package" class="w-5 h-5"></i> Livestock
+            </button>
+            <button onclick="adminRouter('orders')" class="admin-nav-item w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-green-50 hover:text-green-700 rounded-lg transition-colors">
+                <i data-lucide="shopping-cart" class="w-5 h-5"></i> Orders
+            </button>
+            <button onclick="adminRouter('customers')" class="admin-nav-item w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-green-50 hover:text-green-700 rounded-lg transition-colors">
+                <i data-lucide="users" class="w-5 h-5"></i> Customers
+            </button>
+            <button onclick="adminRouter('settings')" class="admin-nav-item w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-green-50 hover:text-green-700 rounded-lg transition-colors">
+                <i data-lucide="settings" class="w-5 h-5"></i> Settings
+            </button>
+        </nav>
+
+        <div class="p-4">
+            <button onclick="alert('Logged Out')" class="w-full flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg">
+                <i data-lucide="log-out" class="w-5 h-5"></i> Logout
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Admin Content -->
+    <main class="flex-1 flex flex-col relative overflow-hidden">
+        <!-- Header -->
+        <header class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center z-10">
+            <div>
+                <h1 id="admin-page-title" class="text-2xl font-bold text-gray-800">Dashboard</h1>
+                <p class="text-sm text-gray-500">Wednesday, Dec 3, 2025</p>
+            </div>
+            <div class="flex items-center gap-6">
+                <button class="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    <i data-lucide="download" class="w-4 h-4"></i> Report
+                </button>
+                <div class="flex items-center gap-3 border-l pl-6">
+                    <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">AU</div>
+                    <div>
+                        <p class="text-sm font-semibold">Admin User</p>
+                        <p class="text-xs text-gray-500">Super Admin</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="flex-1 overflow-y-auto p-8">
+            
+            <!-- 1. DASHBOARD VIEW -->
+            <div id="admin-view-dashboard" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Stat Card 1 -->
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500 font-medium">Total Livestock</p>
+                            <h3 class="text-3xl font-bold text-gray-800 mt-2" id="stat-livestock">0</h3>
+                        </div>
+                        <div class="p-3 bg-blue-50 text-blue-600 rounded-lg">
+                            <i data-lucide="package" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                    <!-- Stat Card 2 -->
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500 font-medium">Available</p>
+                            <h3 class="text-3xl font-bold text-gray-800 mt-2" id="stat-available">0</h3>
+                        </div>
+                        <div class="p-3 bg-green-50 text-green-600 rounded-lg">
+                            <i data-lucide="check-circle" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                     <!-- Stat Card 3 -->
+                     <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500 font-medium">Total Orders</p>
+                            <h3 class="text-3xl font-bold text-gray-800 mt-2" id="stat-orders">0</h3>
+                        </div>
+                        <div class="p-3 bg-red-50 text-red-600 rounded-lg">
+                            <i data-lucide="shopping-bag" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                    <!-- Stat Card 4 -->
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-start justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500 font-medium">Total Revenue</p>
+                            <h3 class="text-3xl font-bold text-gray-800 mt-2" id="stat-revenue">$0</h3>
+                        </div>
+                        <div class="p-3 bg-teal-50 text-teal-600 rounded-lg">
+                            <i data-lucide="dollar-sign" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 gap-6">
+                    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+                        <h3 class="font-bold text-gray-800 mb-4">Inventory Breakdown</h3>
+                        <div class="flex justify-between items-center py-4 border-b">
+                            <span class="flex items-center gap-2"><div class="w-3 h-3 bg-blue-500 rounded-full"></div> Goats</span>
+                            <span class="font-bold" id="breakdown-goats">0</span>
+                        </div>
+                        <div class="flex justify-between items-center py-4">
+                            <span class="flex items-center gap-2"><div class="w-3 h-3 bg-red-500 rounded-full"></div> Sheep</span>
+                            <span class="font-bold" id="breakdown-sheep">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. LIVESTOCK MANAGEMENT VIEW -->
+            <div id="admin-view-livestock" class="hidden space-y-6">
+                <div class="flex justify-between items-center">
+                    <div class="relative w-96">
+                        <i data-lucide="search" class="absolute left-3 top-2.5 w-5 h-5 text-gray-400"></i>
+                        <input type="text" id="admin-search-input" oninput="renderLivestockTable()" placeholder="Search livestock..." class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+                    <button onclick="openAddModal()" class="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-gray-800">
+                        <i data-lucide="plus" class="w-4 h-4"></i> Add Livestock
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50 text-gray-500 text-sm uppercase">
+                            <tr>
+                                <th class="px-6 py-4 font-medium">Name</th>
+                                <th class="px-6 py-4 font-medium">Type</th>
+                                <th class="px-6 py-4 font-medium">Breed</th>
+                                <th class="px-6 py-4 font-medium">Price</th>
+                                <th class="px-6 py-4 font-medium">Status</th>
+                                <th class="px-6 py-4 font-medium text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="livestock-table-body" class="divide-y divide-gray-100 text-sm">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 3. ORDERS VIEW -->
+            <div id="admin-view-orders" class="hidden space-y-6">
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50 text-gray-500 text-sm uppercase">
+                            <tr>
+                                <th class="px-6 py-4 font-medium">Order ID</th>
+                                <th class="px-6 py-4 font-medium">Customer</th>
+                                <th class="px-6 py-4 font-medium">Date</th>
+                                <th class="px-6 py-4 font-medium">Amount</th>
+                                <th class="px-6 py-4 font-medium">Status</th>
+                                <th class="px-6 py-4 font-medium text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-table-body" class="divide-y divide-gray-100 text-sm">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 4. CUSTOMERS VIEW -->
+            <div id="admin-view-customers" class="hidden space-y-6">
+                 <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50 text-gray-500 text-sm uppercase">
+                            <tr>
+                                <th class="px-6 py-4 font-medium">Name</th>
+                                <th class="px-6 py-4 font-medium">Email</th>
+                                <th class="px-6 py-4 font-medium">Role</th>
+                                <th class="px-6 py-4 font-medium">Joined</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-sm">
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 font-bold flex items-center gap-2">
+                                    <div class="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs">A</div>
+                                    Admin User
+                                </td>
+                                <td class="px-6 py-4 text-gray-500">admin@livestockmart.com</td>
+                                <td class="px-6 py-4"><span class="bg-black text-white px-2 py-0.5 rounded text-xs">admin</span></td>
+                                <td class="px-6 py-4 text-gray-500">3/12/2025</td>
+                            </tr>
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 font-bold flex items-center gap-2">
+                                    <div class="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xs">A</div>
+                                    Alex Johnson
+                                </td>
+                                <td class="px-6 py-4 text-gray-500">alex@example.com</td>
+                                <td class="px-6 py-4"><span class="bg-gray-200 text-gray-700 px-2 py-0.5 rounded text-xs">user</span></td>
+                                <td class="px-6 py-4 text-gray-500">3/12/2025</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 5. SETTINGS VIEW -->
+            <div id="admin-view-settings" class="hidden flex items-center justify-center h-full">
+                <div class="text-center text-gray-400">
+                    <i data-lucide="settings" class="w-12 h-12 mx-auto mb-4 opacity-50"></i>
+                    <p>This section is under development.</p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Modal for Adding Livestock -->
+    <div id="addModal" class="modal">
+        <div class="modal-content shadow-lg">
+            <h2 class="text-xl font-bold mb-4">Add New Livestock</h2>
+            <form onsubmit="event.preventDefault(); addLivestock();" class="space-y-3">
+                <input type="text" id="new-name" placeholder="Name (e.g. Alpine Goat)" class="w-full border p-2 rounded" required>
+                <select id="new-type" class="w-full border p-2 rounded">
+                    <option value="Goat">Goat</option>
+                    <option value="Sheep">Sheep</option>
+                </select>
+                <input type="text" id="new-breed" placeholder="Breed (e.g. Alpine)" class="w-full border p-2 rounded" required>
+                <input type="text" id="new-age" placeholder="Age (e.g. 24 months)" class="w-full border p-2 rounded" required>
+                <input type="number" id="new-price" placeholder="Price ($)" class="w-full border p-2 rounded" required>
+                <div class="flex justify-end gap-2 mt-4">
+                    <button type="button" onclick="closeAddModal()" class="px-4 py-2 text-gray-600">Cancel</button>
+                    <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // State Variables
+        let livestock = [];
+        let orders = [];
+
+        // API URL
+        const API_URL = '/api';
+
+        // --- Fetch Data from API ---
+        async function loadData() {
+            try {
+                // Fetch Livestock
+                const lsRes = await fetch(`${API_URL}/livestock`);
+                livestock = await lsRes.json();
+                
+                // Fetch Orders
+                const ordRes = await fetch(`${API_URL}/orders`);
+                orders = await ordRes.json();
+
+                // Re-render current view
+                const activeView = document.querySelector('.admin-nav-item.bg-green-600').getAttribute('onclick').replace("adminRouter('", "").replace("')", "");
+                adminRouter(activeView);
+            } catch (error) {
+                console.error("Error loading data:", error);
+                alert("Failed to load data from server");
+            }
+        }
+
+        function adminRouter(viewName) {
+            const titles = { 'dashboard': 'Dashboard', 'livestock': 'Livestock', 'orders': 'Orders', 'customers': 'Customers', 'settings': 'Settings' };
+            const titleEl = document.getElementById('admin-page-title');
+            if(titleEl) titleEl.innerText = titles[viewName];
+
+            ['dashboard', 'livestock', 'orders', 'customers', 'settings'].forEach(v => document.getElementById(`admin-view-${v}`)?.classList.add('hidden'));
+            document.getElementById(`admin-view-${viewName}`)?.classList.remove('hidden');
+
+            document.querySelectorAll('.admin-nav-item').forEach(btn => {
+                if(btn.getAttribute('onclick').includes(viewName)) {
+                    btn.classList.add('bg-green-600', 'text-white');
+                    btn.classList.remove('text-gray-600', 'hover:bg-green-50');
+                } else {
+                    btn.classList.remove('bg-green-600', 'text-white');
+                    btn.classList.add('text-gray-600', 'hover:bg-green-50');
+                }
+            });
+
+            if(viewName === 'dashboard') renderDashboard();
+            if(viewName === 'livestock') renderLivestockTable();
+            if(viewName === 'orders') renderOrdersTable();
+        }
+
+        function renderDashboard() {
+            document.getElementById('stat-livestock').innerText = livestock.length;
+            document.getElementById('stat-available').innerText = livestock.filter(i => i.status === 'Available').length;
+            document.getElementById('stat-orders').innerText = orders.length;
+            const revenue = orders.reduce((sum, o) => sum + o.total, 0);
+            document.getElementById('stat-revenue').innerText = '$' + revenue.toLocaleString();
+
+            document.getElementById('breakdown-goats').innerText = livestock.filter(i => i.type === 'Goat').length;
+            document.getElementById('breakdown-sheep').innerText = livestock.filter(i => i.type === 'Sheep').length;
+        }
+
+        function renderLivestockTable() {
+            const search = document.getElementById('admin-search-input').value.toLowerCase();
+            const tbody = document.getElementById('livestock-table-body');
+            const filtered = livestock.filter(i => i.name.toLowerCase().includes(search));
+
+            tbody.innerHTML = filtered.map((item) => `
+                <tr class="hover:bg-gray-50 border-b">
+                    <td class="px-6 py-4 font-medium text-gray-900 flex items-center gap-3">
+                        <span class="text-xl">${item.image}</span>
+                        <div>
+                            <div class="font-bold">${item.name}</div>
+                            <div class="text-xs text-gray-500">${item.age}</div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4"><span class="${item.type==='Goat'?'bg-red-50 text-red-700':'bg-blue-50 text-blue-700'} px-2 py-1 rounded text-xs font-bold">${item.type}</span></td>
+                    <td class="px-6 py-4">${item.breed}</td>
+                    <td class="px-6 py-4 font-bold">$${item.price}</td>
+                    <td class="px-6 py-4"><span class="bg-gray-900 text-white px-3 py-1 rounded-full text-xs">${item.status}</span></td>
+                    <td class="px-6 py-4 text-right flex justify-end gap-3">
+                        <i onclick="deleteLivestock('${item._id}')" data-lucide="trash" class="w-4 h-4 text-gray-500 cursor-pointer hover:text-red-500"></i>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderOrdersTable() {
+            const tbody = document.getElementById('orders-table-body');
+            if(orders.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4">No orders yet</td></tr>';
+                return;
+            }
+            tbody.innerHTML = orders.map((o) => `
+                <tr class="hover:bg-gray-50 border-b">
+                    <td class="px-6 py-4 font-medium">#${o._id.substr(-6)}</td>
+                    <td class="px-6 py-4 font-bold">${o.customer}</td>
+                    <td class="px-6 py-4 text-gray-500">${o.date}</td>
+                    <td class="px-6 py-4 font-bold">$${o.total}</td>
+                    <td class="px-6 py-4"><span class="px-3 py-1 rounded-full text-xs font-bold ${o.status === 'Shipped' ? 'bg-blue-100 text-blue-700' : (o.status === 'Delivered' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-800')}">${o.status}</span></td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="nextStatus('${o._id}', '${o.status}')" class="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded">Update Status</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // --- Logic & API Calls ---
+        async function deleteLivestock(id) {
+            if(confirm("Delete this livestock?")) {
+                try {
+                    await fetch(`${API_URL}/livestock/${id}`, { method: 'DELETE' });
+                    loadData(); // Reload data
+                } catch (error) {
+                    alert("Error deleting item");
+                }
+            }
+        }
+
+        function openAddModal() { document.getElementById('addModal').style.display = 'block'; }
+        function closeAddModal() { document.getElementById('addModal').style.display = 'none'; }
+
+        async function addLivestock() {
+            const name = document.getElementById('new-name').value;
+            const type = document.getElementById('new-type').value;
+            const breed = document.getElementById('new-breed').value;
+            const age = document.getElementById('new-age').value;
+            const price = parseFloat(document.getElementById('new-price').value);
+            const image = type === 'Goat' ? '🐐' : '🐑';
+
+            const newItem = {
+                name, type, breed, age, price, image,
+                tags: ["New Arrival"], status: "Available"
+            };
+
+            try {
+                await fetch(`${API_URL}/livestock`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(newItem)
+                });
+                closeAddModal();
+                loadData();
+                document.querySelector('form').reset();
+            } catch (error) {
+                alert("Error adding livestock");
+            }
+        }
+
+        async function nextStatus(id, currentStatus) {
+            let next = 'Processing';
+            if(currentStatus === 'Processing') next = 'Shipped';
+            else if(currentStatus === 'Shipped') next = 'Delivered';
+            else next = 'Processing';
+
+            try {
+                await fetch(`${API_URL}/orders/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: next })
+                });
+                loadData();
+            } catch (error) {
+                alert("Error updating order");
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData(); // Load initial data from DB
+            adminRouter('dashboard');
+        });
+    </script>
+</body>
+</html>
