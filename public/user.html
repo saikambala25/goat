@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LivestockMart - User App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 h-screen flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-white border-r border-gray-200 flex flex-col z-10 hidden md:flex">
+        <div class="p-6 flex items-center gap-3">
+            <div class="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">L</div>
+            <span class="text-xl font-bold text-gray-800">LivestockMart</span>
+        </div>
+
+        <nav class="flex-1 px-4 space-y-2 overflow-y-auto">
+            <button onclick="router('browse')" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                <i data-lucide="home" class="w-5 h-5"></i> Browse Livestock
+            </button>
+            <button onclick="router('dashboard')" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i> My Dashboard
+            </button>
+            <button onclick="router('cart')" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                <i data-lucide="shopping-cart" class="w-5 h-5"></i> Shopping Cart
+                <span id="cart-badge" class="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full hidden">0</span>
+            </button>
+            <button onclick="router('orders')" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                <i data-lucide="package" class="w-5 h-5"></i> My Orders
+            </button>
+            <button onclick="router('wishlist')" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                <i data-lucide="heart" class="w-5 h-5"></i> Wishlist
+            </button>
+            <button onclick="router('addresses')" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                <i data-lucide="map-pin" class="w-5 h-5"></i> Addresses
+            </button>
+            <button onclick="router('profile')" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                <i data-lucide="user" class="w-5 h-5"></i> Profile
+            </button>
+            <button onclick="router('support')" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                <i data-lucide="headphones" class="w-5 h-5"></i> Support
+            </button>
+        </nav>
+
+        <div class="p-4 border-t border-gray-200">
+            <button onclick="alert('Logged out successfully!')" class="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                <i data-lucide="log-out" class="w-5 h-5"></i> Logout
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col relative overflow-hidden">
+        <!-- Header -->
+        <header class="bg-white border-b border-gray-200 px-8 py-4 flex justify-between items-center z-10">
+            <div>
+                <h1 id="page-title" class="text-2xl font-bold text-gray-800">My Dashboard</h1>
+                <p class="text-sm text-gray-500" id="current-date">Wednesday, Dec 3, 2025</p>
+            </div>
+            <div class="flex items-center gap-6">
+                <div class="relative cursor-pointer" onclick="router('cart')">
+                    <i data-lucide="shopping-cart" class="w-6 h-6 text-gray-600"></i>
+                    <span id="header-cart-badge" class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full hidden">0</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-bold">AJ</div>
+                    <div class="hidden md:block">
+                        <p class="text-sm font-semibold">Alex Johnson</p>
+                        <p class="text-xs text-gray-500">Gold Member</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Views (Scrollable) -->
+        <div id="content-area" class="flex-1 overflow-y-auto p-8 bg-gray-50 hide-scrollbar">
+            
+            <!-- 1. DASHBOARD VIEW -->
+            <div id="view-dashboard" class="space-y-6">
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">Total Spent</p>
+                            <h3 class="text-2xl font-bold text-gray-800" id="dash-total-spent">$0</h3>
+                        </div>
+                        <div class="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center text-xl">💰</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">My Orders</p>
+                            <h3 class="text-2xl font-bold text-gray-800" id="dash-total-orders">0</h3>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xl">📦</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">Wishlist</p>
+                            <h3 class="text-2xl font-bold text-gray-800" id="dash-total-wishlist">0</h3>
+                        </div>
+                        <div class="w-12 h-12 bg-pink-100 text-pink-600 rounded-full flex items-center justify-center text-xl">❤️</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
+                        <div>
+                            <p class="text-sm text-gray-500 mb-1">Active Coupons</p>
+                            <h3 class="text-2xl font-bold text-gray-800">3</h3>
+                        </div>
+                        <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-xl">🎫</div>
+                    </div>
+                </div>
+
+                <!-- Recent Orders -->
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm">
+                    <div class="p-6 border-b border-gray-200">
+                        <h3 class="font-bold text-gray-800">Recent Orders</h3>
+                    </div>
+                    <div class="p-6 space-y-4" id="dash-recent-orders">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. BROWSE LIVESTOCK VIEW -->
+            <div id="view-browse" class="hidden space-y-6">
+                <!-- Search & Filters -->
+                <div class="flex flex-col md:flex-row gap-4 justify-between">
+                    <div class="relative flex-1 max-w-md">
+                        <i data-lucide="search" class="absolute left-3 top-3 w-5 h-5 text-gray-400"></i>
+                        <input type="text" id="search-input" oninput="renderBrowse()" placeholder="Search by name or breed..." class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="filterCategory('All')" class="filter-btn px-4 py-2 bg-gray-800 text-white rounded-lg text-sm font-medium">All</button>
+                        <button onclick="filterCategory('Goat')" class="filter-btn px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50">Goats</button>
+                        <button onclick="filterCategory('Sheep')" class="filter-btn px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50">Sheep</button>
+                    </div>
+                </div>
+
+                <!-- Grid -->
+                <div id="livestock-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Cards injected by JS -->
+                </div>
+            </div>
+
+            <!-- 3. SHOPPING CART VIEW -->
+            <div id="view-cart" class="hidden space-y-6">
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                    <h3 class="font-bold text-lg mb-6">Shopping Cart <span id="cart-count-title" class="text-gray-400 text-sm font-normal">(0 items)</span></h3>
+                    <div id="cart-items-container" class="space-y-6">
+                        <!-- Cart Items injected JS -->
+                        <div class="text-center py-10 text-gray-400">Your cart is empty</div>
+                    </div>
+                    <div class="mt-8 pt-6 border-t border-gray-100 flex justify-between items-center">
+                        <h3 class="text-xl font-bold">Total: <span id="cart-total">$0</span></h3>
+                        <button onclick="checkout()" class="bg-gray-800 text-white px-8 py-3 rounded-lg font-medium hover:bg-gray-900 transition">Proceed to Checkout</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. ORDERS VIEW -->
+            <div id="view-orders" class="hidden space-y-6">
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                    <h3 class="font-bold text-lg mb-6">Order History</h3>
+                    <div class="space-y-4" id="orders-list-full">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. WISHLIST VIEW -->
+            <div id="view-wishlist" class="hidden space-y-6">
+                 <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold text-xl">My Wishlist</h3>
+                 </div>
+                 <div id="wishlist-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Reuse livestock cards logic -->
+                </div>
+            </div>
+            
+            <!-- 6. ADDRESSES VIEW (Placeholder) -->
+            <div id="view-addresses" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-xl border shadow-sm">
+                    <h3 class="font-bold text-lg mb-4">Saved Addresses</h3>
+                    <div class="p-4 border rounded-lg bg-gray-50">
+                        <div class="flex justify-between">
+                            <span class="font-bold">Home</span>
+                            <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">Default</span>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-2">123 Farm Lane, Springfield, IL 62704</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 7. PROFILE VIEW (Placeholder) -->
+            <div id="view-profile" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-xl border shadow-sm">
+                    <h3 class="font-bold text-lg mb-4">Profile Settings</h3>
+                    <div class="space-y-4 max-w-md">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Full Name</label>
+                            <input type="text" value="Alex Johnson" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Email</label>
+                            <input type="email" value="alex@example.com" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2">
+                        </div>
+                        <button class="bg-green-600 text-white px-4 py-2 rounded">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8. SUPPORT VIEW (Placeholder) -->
+            <div id="view-support" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-xl border shadow-sm text-center py-12">
+                    <i data-lucide="headphones" class="w-12 h-12 mx-auto text-green-600 mb-4"></i>
+                    <h3 class="font-bold text-lg">Need Help?</h3>
+                    <p class="text-gray-500 mb-4">Contact our support team 24/7</p>
+                    <button class="bg-green-600 text-white px-6 py-2 rounded-full">Start Chat</button>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // --- Initialization & Data ---
+        const API_URL = '/api';
+        
+        // Data Containers
+        let livestock = [];
+        let orders = [];
+        
+        // Session Data (Reset on refresh per "No LocalStorage" rule, but needed for UI experience)
+        // In a real full-stack app with auth, these would be in the DB 'User' collection.
+        let cart = []; 
+        let wishlist = [];
+        let currentCategory = 'All';
+
+        // --- Fetch Data ---
+        async function loadData() {
+            try {
+                // Fetch Livestock from DB
+                const lsRes = await fetch(`${API_URL}/livestock`);
+                livestock = await lsRes.json();
+                
+                // Fetch Orders from DB
+                const ordRes = await fetch(`${API_URL}/orders`);
+                orders = await ordRes.json();
+                
+                // Refresh current view
+                const currentView = document.querySelector('.nav-item.bg-green-600').getAttribute('onclick').replace("router('", "").replace("')", "");
+                if (currentView === 'dashboard') renderDashboard();
+                if (currentView === 'browse') renderBrowse();
+                if (currentView === 'orders') renderOrders();
+
+            } catch (e) {
+                console.error("API Error", e);
+            }
+        }
+
+        // --- Router ---
+        function router(viewName) {
+            // Load fresh data every nav click
+            loadData();
+
+            const titles = {
+                'dashboard': 'My Dashboard', 'browse': 'Browse Livestock', 'cart': 'Shopping Cart',
+                'orders': 'My Orders', 'wishlist': 'My Wishlist', 'addresses': 'Addresses',
+                'profile': 'My Profile', 'support': 'Support'
+            };
+            document.getElementById('page-title').innerText = titles[viewName] || 'Dashboard';
+
+            // Hide all views
+            const views = ['dashboard', 'browse', 'cart', 'orders', 'wishlist', 'addresses', 'profile', 'support'];
+            views.forEach(v => document.getElementById(`view-${v}`)?.classList.add('hidden'));
+
+            // Show selected view
+            const activeView = document.getElementById(`view-${viewName}`);
+            if(activeView) activeView.classList.remove('hidden');
+
+            // Update Sidebar
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                if(btn.getAttribute('onclick').includes(viewName)) {
+                    btn.classList.add('bg-green-600', 'text-white');
+                    btn.classList.remove('text-gray-600', 'hover:bg-gray-100');
+                } else {
+                    btn.classList.remove('bg-green-600', 'text-white');
+                    btn.classList.add('text-gray-600', 'hover:bg-gray-100');
+                }
+            });
+
+            // Render view specific content
+            if(viewName === 'dashboard') renderDashboard();
+            if(viewName === 'browse') renderBrowse();
+            if(viewName === 'cart') renderCart();
+            if(viewName === 'orders') renderOrders();
+            if(viewName === 'wishlist') renderWishlist();
+            
+            lucide.createIcons();
+        }
+
+        // --- View Logic ---
+
+        function renderDashboard() {
+            // Update Stats
+            const totalSpent = orders.reduce((sum, order) => sum + order.total, 0);
+            document.getElementById('dash-total-spent').innerText = '$' + totalSpent.toLocaleString();
+            document.getElementById('dash-total-orders').innerText = orders.length;
+            document.getElementById('dash-total-wishlist').innerText = wishlist.length;
+
+            // Recent Orders
+            const recentContainer = document.getElementById('dash-recent-orders');
+            if (orders.length === 0) {
+                recentContainer.innerHTML = '<p class="text-gray-500 text-sm">No orders yet.</p>';
+            } else {
+                const recent = orders.slice(0, 3); // Already sorted by backend desc
+                recentContainer.innerHTML = recent.map(o => `
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-white rounded flex items-center justify-center text-2xl">📦</div>
+                            <div>
+                                <p class="font-bold text-gray-800">${o.items[0].name} ${o.items.length > 1 ? '+' + (o.items.length -1) + ' more' : ''}</p>
+                                <p class="text-xs text-gray-500">#${o._id.substr(-6)} • ${o.date}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold">$${o.total}</p>
+                            <span class="text-xs px-2 py-1 ${getStatusColor(o.status)} rounded-full font-medium">${o.status}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        function filterCategory(cat) {
+            currentCategory = cat;
+            // Update UI buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if(btn.innerText === cat) {
+                    btn.classList.add('bg-gray-800', 'text-white');
+                    btn.classList.remove('bg-white', 'text-gray-600', 'border');
+                } else {
+                    btn.classList.remove('bg-gray-800', 'text-white');
+                    btn.classList.add('bg-white', 'text-gray-600', 'border');
+                }
+            });
+            renderBrowse();
+        }
+
+        function renderBrowse() {
+            const searchTerm = document.getElementById('search-input').value.toLowerCase();
+            const grid = document.getElementById('livestock-grid');
+            
+            const filtered = livestock.filter(item => {
+                const matchSearch = item.name.toLowerCase().includes(searchTerm) || item.breed.toLowerCase().includes(searchTerm);
+                const matchCat = currentCategory === 'All' || item.type === currentCategory;
+                return matchSearch && matchCat;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="col-span-3 text-center text-gray-500 py-10">No livestock found matching your criteria.</div>';
+                return;
+            }
+
+            grid.innerHTML = filtered.map(item => {
+                const inWishlist = wishlist.includes(item._id);
+                return `
+                <div class="bg-white p-4 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow">
+                    <div class="h-40 bg-gray-100 rounded-lg flex items-center justify-center text-6xl mb-4 relative">
+                        ${item.image}
+                        <button onclick="toggleWishlist('${item._id}')" class="absolute top-2 right-2 p-2 bg-white rounded-full shadow-sm hover:text-red-500 ${inWishlist ? 'text-red-500' : 'text-gray-400'}">
+                            <i data-lucide="heart" class="w-4 h-4 ${inWishlist ? 'fill-current' : ''}"></i>
+                        </button>
+                    </div>
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="font-bold text-lg text-gray-800">${item.name}</h3>
+                            <p class="text-xs text-gray-500">${item.breed} • ${item.age}</p>
+                        </div>
+                        <span class="bg-gray-800 text-white text-xs px-2 py-1 rounded">${item.tags[0] || 'Good'}</span>
+                    </div>
+                    <div class="flex items-center justify-between mt-4">
+                        <span class="text-xl font-bold text-green-700">$${item.price}</span>
+                        <button onclick="addToCart('${item._id}')" class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800 transition">Add to Cart</button>
+                    </div>
+                </div>
+            `}).join('');
+            lucide.createIcons();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-items-container');
+            const totalEl = document.getElementById('cart-total');
+            const titleEl = document.getElementById('cart-count-title');
+            
+            if(cart.length === 0) {
+                container.innerHTML = '<div class="text-center py-10 text-gray-400">Your cart is empty.</div>';
+                totalEl.innerText = '$0';
+                titleEl.innerText = '(0 items)';
+                return;
+            }
+
+            let total = 0;
+            container.innerHTML = cart.map((item, index) => {
+                total += item.price;
+                return `
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div class="flex items-center gap-4">
+                        <div class="w-16 h-16 bg-white rounded-lg flex items-center justify-center text-3xl border border-gray-200">${item.image}</div>
+                        <div>
+                            <h4 class="font-bold text-gray-800">${item.name}</h4>
+                            <p class="text-sm text-gray-500">Breed: ${item.breed}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-6">
+                        <p class="font-bold text-lg w-20 text-right">$${item.price}</p>
+                        <button onclick="removeFromCart(${index})" class="text-red-500 hover:bg-red-50 p-2 rounded-full">
+                            <i data-lucide="trash-2" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+                `;
+            }).join('');
+            
+            totalEl.innerText = '$' + total.toLocaleString();
+            titleEl.innerText = `(${cart.length} items)`;
+            lucide.createIcons();
+        }
+
+        function renderOrders() {
+            const container = document.getElementById('orders-list-full');
+            if(orders.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500">No past orders.</div>';
+                return;
+            }
+            container.innerHTML = orders.map(o => `
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-white rounded flex items-center justify-center text-2xl">📦</div>
+                        <div>
+                            <p class="font-bold text-gray-800">Order #${o._id.substr(-6)}</p>
+                            <p class="text-xs text-gray-500">${o.items.map(i => i.name).join(', ')}</p>
+                            <p class="text-xs text-gray-400">${o.date}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold">$${o.total}</p>
+                        <span class="text-xs px-2 py-1 ${getStatusColor(o.status)} rounded-full font-medium">${o.status}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderWishlist() {
+            const grid = document.getElementById('wishlist-grid');
+            const items = livestock.filter(item => wishlist.includes(item._id));
+            
+            if(items.length === 0) {
+                grid.innerHTML = '<div class="col-span-3 text-center text-gray-500">Your wishlist is empty.</div>';
+                return;
+            }
+
+            grid.innerHTML = items.map(item => `
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm relative">
+                    <button onclick="toggleWishlist('${item._id}')" class="absolute top-4 right-4 text-red-500 bg-white rounded-full p-1 shadow">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                    <div class="h-40 bg-gray-100 rounded-lg flex items-center justify-center text-6xl mb-4">
+                        ${item.image}
+                    </div>
+                    <h3 class="font-bold text-lg text-gray-800">${item.name}</h3>
+                    <div class="flex items-center justify-between mt-4">
+                        <span class="text-xl font-bold text-green-700">$${item.price}</span>
+                        <button onclick="addToCart('${item._id}')" class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm">Add to Cart</button>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        // --- Actions ---
+
+        function addToCart(id) {
+            const item = livestock.find(i => i._id === id);
+            if(item) {
+                cart.push(item);
+                updateCartBadge();
+                alert(`${item.name} added to cart!`);
+            }
+        }
+
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            renderCart();
+            updateCartBadge();
+        }
+
+        function toggleWishlist(id) {
+            const index = wishlist.indexOf(id);
+            if(index === -1) {
+                wishlist.push(id);
+            } else {
+                wishlist.splice(index, 1);
+            }
+            // Re-render current view if necessary
+            const active = document.querySelector('.nav-item.bg-green-600').getAttribute('onclick');
+            if(active.includes('wishlist')) renderWishlist();
+            if(active.includes('browse')) renderBrowse();
+            if(active.includes('dashboard')) renderDashboard(); // update count
+        }
+
+        async function checkout() {
+            if(cart.length === 0) return;
+            if(confirm("Confirm purchase for $" + cart.reduce((a,b)=>a+b.price,0) + "?")) {
+                
+                const newOrder = {
+                    date: new Date().toLocaleDateString(),
+                    items: cart.map(c => ({ id: c._id, name: c.name, price: c.price, breed: c.breed })),
+                    total: cart.reduce((a,b)=>a+b.price,0),
+                    status: "Processing",
+                    customer: "Alex Johnson" // Static for demo
+                };
+
+                try {
+                    await fetch(`${API_URL}/orders`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(newOrder)
+                    });
+
+                    cart = [];
+                    updateCartBadge();
+                    router('orders');
+                    alert("Order placed successfully!");
+                } catch (e) {
+                    alert("Error placing order");
+                }
+            }
+        }
+
+        function updateCartBadge() {
+            const badges = [document.getElementById('cart-badge'), document.getElementById('header-cart-badge')];
+            badges.forEach(b => {
+                b.innerText = cart.length;
+                if(cart.length > 0) b.classList.remove('hidden');
+                else b.classList.add('hidden');
+            });
+        }
+
+        function getStatusColor(status) {
+            if(status === 'Shipped') return 'bg-blue-100 text-blue-700';
+            if(status === 'Delivered') return 'bg-gray-800 text-white';
+            if(status === 'Processing') return 'bg-yellow-100 text-yellow-800';
+            return 'bg-gray-100 text-gray-800';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateCartBadge();
+            // Set current date
+            const dateOptions = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
+            document.getElementById('current-date').innerText = new Date().toLocaleDateString('en-US', dateOptions);
+            loadData(); // Initial data load
+            router('dashboard');
+        });
+    </script>
+</body>
+</html>
