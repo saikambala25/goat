@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema({
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: false, // for old orders without user
+    },
     customer: { type: String, required: true },
     date: { type: String, required: true }, // Keeping string for simplicity matching frontend
     items: [{
