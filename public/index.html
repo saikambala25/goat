@@ -45,7 +45,7 @@
     <!-- Toast / popup messages -->
     <div id="toast-container" class="fixed top-4 right-4 z-40 space-y-3 pointer-events-none"></div>
 
-    <!-- Address modal (used on checkout) -->
+    <!-- Address modal (used on checkout & edit) -->
     <div id="address-modal" class="fixed inset-0 z-30 hidden items-center justify-center bg-black/60">
         <div class="bg-white rounded-2xl p-6 w-full max-w-md text-gray-800 shadow-2xl">
             <div class="flex items-center justify-between mb-4">
@@ -314,14 +314,15 @@
 
                 <!-- DASHBOARD VIEW -->
                 <div id="view-dashboard" class="space-y-6">
-                    <!-- Stats Cards -->
+                    <!-- Stats Cards (Total Livestock first, Total Spent last) -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <!-- Total Livestock FIRST -->
                         <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
                             <div>
-                                <p class="text-sm text-gray-500 mb-1">Total Spent</p>
-                                <h3 class="text-2xl font-bold text-gray-800" id="dash-total-spent">0</h3>
+                                <p class="text-sm text-gray-500 mb-1">Total Livestock</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="dash-total-livestock">0</h3>
                             </div>
-                            <div class="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center text-xl">💰</div>
+                            <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xl">🐐</div>
                         </div>
                         <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
                             <div>
@@ -337,13 +338,13 @@
                             </div>
                             <div class="w-12 h-12 bg-pink-100 text-pink-600 rounded-full flex items-center justify-center text-xl">❤️</div>
                         </div>
-                        <!-- Replaced coupons with total livestock count -->
+                        <!-- Total Spent LAST -->
                         <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
                             <div>
-                                <p class="text-sm text-gray-500 mb-1">Total Livestock</p>
-                                <h3 class="text-2xl font-bold text-gray-800" id="dash-total-livestock">0</h3>
+                                <p class="text-sm text-gray-500 mb-1">Total Spent</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="dash-total-spent">0</h3>
                             </div>
-                            <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xl">🐐</div>
+                            <div class="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center text-xl">💰</div>
                         </div>
                     </div>
 
@@ -406,7 +407,10 @@
                 <!-- ADDRESSES VIEW -->
                 <div id="view-addresses" class="hidden space-y-6">
                     <div class="bg-white p-6 rounded-xl border shadow-sm">
-                        <h3 class="font-bold text-lg mb-4">Saved Addresses</h3>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-bold text-lg">Saved Addresses</h3>
+                            <!-- Optional: future "Add New" button -->
+                        </div>
                         <div id="addresses-container" class="space-y-4">
                             <!-- Filled by JS -->
                         </div>
@@ -454,11 +458,13 @@
 
         let cart = [];
         let wishlist = [];
+        let addresses = [];
         let currentCategory = 'All';
         let currentUser = null;
         let appInitialized = false;
-        let currentAddress = null;
         let pendingCheckoutItems = null;
+        let pendingAddressForCheckout = null;
+        let editingAddressIndex = null;
 
         // --- Toast popup ---
         function showToast(message, type = 'info') {
@@ -503,44 +509,11 @@
             }, 3000);
         }
 
-        // --- Helpers for INR formatting & user keys ---
+        // --- Helpers for INR formatting ---
 
         function formatINR(value) {
             const num = Number(value) || 0;
             return num.toLocaleString('en-IN');
-        }
-
-        function userKey(suffix) {
-            if (!currentUser || !currentUser.id) return null;
-            return `lm_${suffix}_${currentUser.id}`;
-        }
-
-        function loadUserState() {
-            if (!currentUser || !currentUser.id) return;
-            try {
-                const cKey = userKey('cart');
-                const wKey = userKey('wishlist');
-                const aKey = userKey('address');
-
-                cart = JSON.parse(localStorage.getItem(cKey) || '[]');
-                wishlist = JSON.parse(localStorage.getItem(wKey) || '[]');
-                currentAddress = JSON.parse(localStorage.getItem(aKey) || 'null') || null;
-            } catch {
-                cart = [];
-                wishlist = [];
-                currentAddress = null;
-            }
-        }
-
-        function saveUserState() {
-            if (!currentUser || !currentUser.id) return;
-            try {
-                localStorage.setItem(userKey('cart'), JSON.stringify(cart));
-                localStorage.setItem(userKey('wishlist'), JSON.stringify(wishlist));
-                localStorage.setItem(userKey('address'), JSON.stringify(currentAddress));
-            } catch (e) {
-                console.warn('Could not save user state', e);
-            }
         }
 
         // --- AUTH UI HELPERS ---
@@ -651,7 +624,7 @@
                 }
 
                 currentUser = data.user;
-                loadUserState();
+                await fetchUserStateFromApi();
                 updateProfileUI();
                 updateCartBadge();
                 showToast('Logged in successfully', 'success');
@@ -690,7 +663,7 @@
                 }
 
                 currentUser = data.user;
-                loadUserState();
+                await fetchUserStateFromApi();
                 updateProfileUI();
                 updateCartBadge();
                 showToast('Account created & logged in', 'success');
@@ -702,7 +675,7 @@
         }
 
         async function handleLogout() {
-            try {
+            try:
                 await fetch(`${API_URL}/auth/logout`, {
                     method: 'POST',
                     credentials: 'include'
@@ -714,9 +687,8 @@
             currentUser = null;
             cart = [];
             wishlist = [];
-            currentAddress = null;
+            addresses = [];
             updateCartBadge();
-            saveUserState();
 
             toggleProfileMenu(false);
             showToast('Logged out', 'info');
@@ -732,7 +704,7 @@
                 if (res.ok) {
                     const data = await res.json();
                     currentUser = data.user;
-                    loadUserState();
+                    await fetchUserStateFromApi();
                     updateProfileUI();
                     updateCartBadge();
                     showApp();
@@ -745,6 +717,55 @@
             }
         }
 
+        // --- USER STATE (from API only, no localStorage) ---
+
+        async function fetchUserStateFromApi() {
+            if (!currentUser) return;
+            try {
+                const res = await fetch(`${API_URL}/user/state`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                if (!res.ok) {
+                    cart = [];
+                    wishlist = [];
+                    addresses = [];
+                    return;
+                }
+                const data = await res.json();
+                cart = data.cart || [];
+                wishlist = data.wishlist || [];
+                addresses = data.addresses || [];
+            } catch (e) {
+                console.error('Fetch user state error', e);
+                cart = [];
+                wishlist = [];
+                addresses = [];
+            }
+        }
+
+        async function saveUserState() {
+            if (!currentUser) return;
+            try {
+                const body = {
+                    cart: cart.map(c => ({
+                        _id: c._id,
+                        selected: c.selected !== false
+                    })),
+                    wishlist: wishlist,
+                    addresses: addresses
+                };
+                await fetch(`${API_URL}/user/state`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(body)
+                });
+            } catch (e) {
+                console.error('Save user state error', e);
+            }
+        }
+
         // --- DATA LOADING ---
 
         async function loadData() {
@@ -752,8 +773,14 @@
                 const lsRes = await fetch(`${API_URL}/livestock`);
                 livestock = await lsRes.json();
 
-                const ordRes = await fetch(`${API_URL}/orders`);
-                orders = await ordRes.json();
+                const ordRes = await fetch(`${API_URL}/my-orders`, {
+                    credentials: 'include'
+                });
+                if (ordRes.ok) {
+                    orders = await ordRes.json();
+                } else {
+                    orders = [];
+                }
 
                 const activeNav = document.querySelector('.nav-item.bg-green-600');
                 let currentView = 'dashboard';
@@ -892,7 +919,10 @@
                     </div>
                     <div class="flex items-center justify-between mt-4">
                         <span class="text-xl font-bold text-green-700">${formatINR(item.price)}</span>
-                        <button onclick="addToCart('${item._id}')" class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800 transition">Add to Cart</button>
+                        <div class="flex gap-2">
+                            <button onclick="addToCart('${item._id}')" class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800 transition">Add to Cart</button>
+                            <button onclick="buyNow('${item._id}')" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-emerald-700 transition">Buy Now</button>
+                        </div>
                     </div>
                 </div>
             `}).join('');
@@ -999,7 +1029,7 @@
             const container = document.getElementById('addresses-container');
             if (!container) return;
 
-            if (!currentAddress) {
+            if (!addresses || addresses.length === 0) {
                 container.innerHTML = `
                     <div class="text-sm text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-lg p-4">
                         No saved addresses yet. An address will be saved here when you buy a product.
@@ -1008,20 +1038,21 @@
                 return;
             }
 
-            const a = currentAddress;
-            container.innerHTML = `
-                <div class="border rounded-lg p-4 bg-gray-50">
-                    <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <p class="font-semibold text-gray-800">${a.name}</p>
-                            <p class="text-xs text-gray-500">+91 ${a.phone}</p>
-                        </div>
-                        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Saved</span>
+            container.innerHTML = addresses.map((a, idx) => `
+                <div class="border rounded-lg p-4 bg-gray-50 flex justify-between items-start gap-4">
+                    <div>
+                        <p class="text-xs font-semibold text-gray-500 mb-1">${a.label || (a.pincode + ' - ' + a.city + ', ' + a.state)}</p>
+                        <p class="font-semibold text-gray-800">${a.name}</p>
+                        <p class="text-xs text-gray-500">+91 ${a.phone}</p>
+                        <p class="text-sm text-gray-700 mt-2">${a.line1 || a.line}</p>
+                        <p class="text-sm text-gray-700">${a.city}, ${a.state} - ${a.pincode}</p>
                     </div>
-                    <p class="text-sm text-gray-700">${a.line}</p>
-                    <p class="text-sm text-gray-700 mt-1">${a.city}, ${a.state} - ${a.pincode}</p>
+                    <div class="flex flex-col gap-2">
+                        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full text-center">Saved</span>
+                        <button onclick="editAddress(${idx})" class="text-xs px-3 py-1 border rounded-lg text-gray-700 hover:bg-gray-100">Edit</button>
+                    </div>
                 </div>
-            `;
+            `).join('');
         }
 
         // --- CART / WISHLIST / CHECKOUT ACTIONS ---
@@ -1036,6 +1067,20 @@
                 showToast(`${item.name} added to cart`, 'success');
                 const active = document.querySelector('.nav-item.bg-green-600')?.getAttribute('onclick') || '';
                 if (active.includes('dashboard')) renderDashboard();
+            }
+        }
+
+        function buyNow(id) {
+            const item = livestock.find(i => i._id === id);
+            if (!item) return;
+            const buyItem = { ...item, selected: true };
+
+            const itemsToBuy = [buyItem];
+
+            if (!addresses || addresses.length === 0) {
+                openAddressModal(itemsToBuy, null);
+            } else {
+                createOrder(itemsToBuy, addresses[0]);
             }
         }
 
@@ -1069,21 +1114,25 @@
             if (active.includes('dashboard')) renderDashboard();
         }
 
-        function openAddressModal(itemsToBuy) {
+        function openAddressModal(itemsToBuy, addressIndex) {
             pendingCheckoutItems = itemsToBuy || null;
+            editingAddressIndex = typeof addressIndex === 'number' ? addressIndex : null;
+
             const modal = document.getElementById('address-modal');
             if (!modal) return;
-            const hasAddress = !!currentAddress;
-            if (hasAddress) {
-                document.getElementById('addr-name').value = currentAddress.name || '';
-                document.getElementById('addr-phone').value = currentAddress.phone || '';
-                document.getElementById('addr-line').value = currentAddress.line || '';
-                document.getElementById('addr-city').value = currentAddress.city || '';
-                document.getElementById('addr-state').value = currentAddress.state || '';
-                document.getElementById('addr-pincode').value = currentAddress.pincode || '';
+
+            if (editingAddressIndex != null && addresses[editingAddressIndex]) {
+                const a = addresses[editingAddressIndex];
+                document.getElementById('addr-name').value = a.name || '';
+                document.getElementById('addr-phone').value = a.phone || '';
+                document.getElementById('addr-line').value = a.line1 || a.line || '';
+                document.getElementById('addr-city').value = a.city || '';
+                document.getElementById('addr-state').value = a.state || '';
+                document.getElementById('addr-pincode').value = a.pincode || '';
             } else {
                 document.getElementById('address-form').reset();
             }
+
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         }
@@ -1094,6 +1143,8 @@
             modal.classList.add('hidden');
             modal.classList.remove('flex');
             pendingCheckoutItems = null;
+            pendingAddressForCheckout = null;
+            editingAddressIndex = null;
         }
 
         async function submitAddress(event) {
@@ -1118,16 +1169,40 @@
                 return;
             }
 
-            currentAddress = { name, phone, line, city, state, pincode };
-            saveUserState();
+            const label = `${pincode} - ${city}, ${state}`;
+            const addrObj = {
+                label,
+                name,
+                phone,
+                line1: line,
+                city,
+                state,
+                pincode
+            };
+
+            let finalAddress = null;
+
+            if (editingAddressIndex != null && addresses[editingAddressIndex]) {
+                addresses[editingAddressIndex] = { ...addresses[editingAddressIndex], ...addrObj };
+                finalAddress = addresses[editingAddressIndex];
+            } else {
+                addresses.push(addrObj);
+                finalAddress = addrObj;
+            }
+
+            await saveUserState();
             renderAddresses();
             closeAddressModal();
             showToast('Address saved', 'success');
 
             if (pendingCheckoutItems && pendingCheckoutItems.length > 0) {
-                await createOrder(pendingCheckoutItems);
+                await createOrder(pendingCheckoutItems, finalAddress);
                 pendingCheckoutItems = null;
             }
+        }
+
+        function editAddress(index) {
+            openAddressModal(null, index);
         }
 
         async function checkout() {
@@ -1141,15 +1216,15 @@
                 return;
             }
 
-            if (!currentAddress) {
-                openAddressModal(itemsToBuy);
+            if (!addresses || addresses.length === 0) {
+                openAddressModal(itemsToBuy, null);
                 return;
             }
 
-            await createOrder(itemsToBuy);
+            await createOrder(itemsToBuy, addresses[0]);
         }
 
-        async function createOrder(itemsToBuy) {
+        async function createOrder(itemsToBuy, shippingAddress) {
             const total = itemsToBuy.reduce((sum, item) => sum + (item.price || 0), 0);
             const customerName = currentUser?.name || 'Guest User';
 
@@ -1159,20 +1234,28 @@
                 total: total,
                 status: "Processing",
                 customer: customerName,
-                address: currentAddress
+                address: shippingAddress || null
             };
 
             try {
-                await fetch(`${API_URL}/orders`, {
+                const res = await fetch(`${API_URL}/orders`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
                     body: JSON.stringify(newOrder)
                 });
 
+                if (!res.ok) {
+                    showToast('Error placing order.', 'error');
+                    return;
+                }
+
                 // Remove only purchased items from cart
-                cart = cart.filter(item => item.selected === false);
+                const ids = new Set(itemsToBuy.map(it => it._id));
+                cart = cart.filter(item => !ids.has(item._id) || item.selected === false);
+
                 updateCartBadge();
-                saveUserState();
+                await saveUserState();
                 router('orders');
                 showToast('Order placed successfully!', 'success');
             } catch (e) {
