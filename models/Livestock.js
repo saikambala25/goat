@@ -1,17 +1,15 @@
-// models/Livestock.js
 const mongoose = require('mongoose');
 
-const livestockSchema = new mongoose.Schema(
-  {
-    name: { type: String, required: true, trim: true },
-    type: { type: String, enum: ['Goat', 'Sheep'], required: true },
+const livestockSchema = new mongoose.Schema({
+    name: { type: String, required: true },
+    type: { type: String, required: true }, // Goat or Sheep
     breed: { type: String, required: true },
     age: { type: String, required: true },
     price: { type: Number, required: true },
-    image: { type: String, default: '🐐' }, // emoji or URL
-    tags: [{ type: String }]
-  },
-  { timestamps: true }
-);
+    image: { type: String, required: true }, // Emoji or URL
+    tags: [String],
+    status: { type: String, default: 'Available' },
+    createdAt: { type: Date, default: Date.now }
+});
 
 module.exports = mongoose.model('Livestock', livestockSchema);
