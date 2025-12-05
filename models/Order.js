@@ -1,68 +1,53 @@
 // models/Order.js
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
+
+const addressSchema = new mongoose.Schema(
+  {
+    name: String,
+    phone: String,
+    line: String,
+    city: String,
+    state: String,
+    pincode: String
+  },
+  { _id: false }
+);
 
 const orderItemSchema = new mongoose.Schema(
   {
     id: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Livestock",
-      required: true,
+      ref: 'Livestock'
     },
-    name: { type: String, required: true },
-    price: { type: Number, required: true },
-    breed: { type: String },
-  },
-  { _id: false }
-);
-
-const addressSchema = new mongoose.Schema(
-  {
-    name: { type: String, required: true },
-    phone: { type: String, required: true },
-    line1: { type: String, required: true },
-    city: { type: String, required: true },
-    state: { type: String, required: true },
-    pincode: { type: String, required: true },
+    name: String,
+    price: Number,
+    breed: String
   },
   { _id: false }
 );
 
 const orderSchema = new mongoose.Schema(
   {
-    userId: {
+    user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
+      ref: 'User',
+      required: true
     },
-
-    items: [orderItemSchema], // [{ id, name, price, breed }]
-
+    items: [orderItemSchema],
     total: {
       type: Number,
-      required: true,
+      required: true
     },
-
-    date: {
-      type: String,
-      default: () =>
-        new Date().toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }),
-    },
-
     status: {
       type: String,
-      enum: ["Processing", "Shipped", "Delivered"],
-      default: "Processing",
+      enum: ['Processing', 'Shipped', 'Delivered', 'Cancelled'],
+      default: 'Processing'
     },
-
-    address: addressSchema, // full shipping address object
+    customer: String,
+    address: addressSchema,
+    date: String // stored as display string (e.g., 5/12/2025)
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-module.exports = mongoose.model("Order", orderSchema);
+module.exports = mongoose.model('Order', orderSchema);
