@@ -1,17 +1,13 @@
 // models/User.js
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
 
 const cartItemSchema = new mongoose.Schema(
   {
     livestockId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Livestock',
+      ref: "Livestock",
       required: true,
-    },
-    quantity: {
-      type: Number,
-      default: 1,
     },
     selected: {
       type: Boolean,
@@ -23,36 +19,56 @@ const cartItemSchema = new mongoose.Schema(
 
 const addressSchema = new mongoose.Schema(
   {
-    label: { type: String, default: '' },
     name: { type: String, required: true },
+    phone: { type: String, required: true },
     line1: { type: String, required: true },
-    line2: { type: String, default: '' },
     city: { type: String, required: true },
     state: { type: String, required: true },
     pincode: { type: String, required: true },
-    phone: { type: String, required: true },
   },
   { _id: false }
 );
 
-const userSchema = new mongoose.Schema({
-  name: { type: String, required: true, trim: true },
-  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-  password: { type: String, required: true },
-  cart: [cartItemSchema],
-  wishlist: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Livestock',
+const userSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 2,
     },
-  ],
-  addresses: [addressSchema],
-  createdAt: { type: Date, default: Date.now },
-});
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+    password: {
+      type: String,
+      required: true,
+      minlength: 6,
+    },
 
-// Hash password before save
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password')) return next();
+    // Saved per-user state for dashboard
+    cart: [cartItemSchema], // [{ livestockId, selected }]
+    wishlist: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Livestock",
+      },
+    ], // array of livestock IDs
+    addresses: [addressSchema], // [{ name, phone, line1, city, state, pincode }]
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Hash password before save if modified
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
@@ -62,9 +78,9 @@ userSchema.pre('save', async function (next) {
   }
 });
 
-// Compare password
-userSchema.methods.comparePassword = function (candidatePassword) {
+// Compare plain password with hashed password
+userSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = mongoose.model("User", userSchema);
