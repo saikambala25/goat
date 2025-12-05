@@ -1,28 +1,68 @@
-const mongoose = require('mongoose');
+// models/Order.js
+const mongoose = require("mongoose");
 
-const orderSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    customer: { type: String, required: true },
-    date: { type: String, required: true },
-    items: [
-        {
-            id: String,
-            name: String,
-            price: Number,
-            breed: String
-        }
-    ],
-    total: { type: Number, required: true },
-    status: { type: String, default: "Processing" },
-    address: {
-        name: String,
-        phone: String,
-        line: String,
-        city: String,
-        state: String,
-        pincode: String
+const orderItemSchema = new mongoose.Schema(
+  {
+    id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Livestock",
+      required: true,
     },
-    createdAt: { type: Date, default: Date.now }
-});
+    name: { type: String, required: true },
+    price: { type: Number, required: true },
+    breed: { type: String },
+  },
+  { _id: false }
+);
+
+const addressSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    phone: { type: String, required: true },
+    line1: { type: String, required: true },
+    city: { type: String, required: true },
+    state: { type: String, required: true },
+    pincode: { type: String, required: true },
+  },
+  { _id: false }
+);
+
+const orderSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+
+    items: [orderItemSchema], // [{ id, name, price, breed }]
+
+    total: {
+      type: Number,
+      required: true,
+    },
+
+    date: {
+      type: String,
+      default: () =>
+        new Date().toLocaleDateString("en-IN", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }),
+    },
+
+    status: {
+      type: String,
+      enum: ["Processing", "Shipped", "Delivered"],
+      default: "Processing",
+    },
+
+    address: addressSchema, // full shipping address object
+  },
+  {
+    timestamps: true,
+  }
+);
 
 module.exports = mongoose.model("Order", orderSchema);
