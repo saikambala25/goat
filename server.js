@@ -148,36 +148,82 @@ app.post('/api/auth/logout', (req, res) => {
 });
 
 // --- USER STATE (cart, wishlist, addresses) ---
+// All data now stored ONLY in MongoDB
 
-// Get saved state
+// Get saved state (returns UI-friendly objects)
 app.get('/api/user/state', authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('cart wishlist addresses');
+    const user = await User.findById(req.user.id)
+      .populate('cart.livestockId', 'name type breed age price image tags')
+      .lean();
+
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    res.json({
-      cart: user.cart || [],
-      wishlist: user.wishlist || [],
-      addresses: user.addresses || [],
+    const cart = (user.cart || []).map((ci) => {
+      const ls = ci.livestockId || {};
+      return {
+        _id: ls._id ? ls._id.toString() : null,
+        name: ls.name || '',
+        breed: ls.breed || '',
+        price: ls.price || 0,
+        image: ls.image || '🐐',
+        age: ls.age || '',
+        type: ls.type || '',
+        tags: ls.tags || [],
+        selected: ci.selected !== false,
+      };
     });
+
+    const wishlist = (user.wishlist || []).map((id) => id.toString());
+
+    const addresses = (user.addresses || []).map((a) => ({
+      label: a.label || `${a.pincode || ''} - ${a.city || ''}, ${a.state || ''}`,
+      name: a.name,
+      line1: a.line1,
+      line2: a.line2 || '',
+      city: a.city,
+      state: a.state,
+      pincode: a.pincode,
+      phone: a.phone,
+    }));
+
+    res.json({ cart, wishlist, addresses });
   } catch (err) {
     console.error('Get user state error:', err);
     res.status(500).json({ message: 'Failed to load user state' });
   }
 });
 
-// Save state
+// Save state (expects UI-friendly objects)
 app.put('/api/user/state', authMiddleware, async (req, res) => {
   try {
     const { cart = [], wishlist = [], addresses = [] } = req.body;
+
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
-    user.cart = cart;
-    user.wishlist = wishlist;
-    user.addresses = addresses;
-    await user.save();
+    user.cart = (cart || [])
+      .filter((c) => c._id)
+      .map((c) => ({
+        livestockId: c._id,
+        quantity: 1,
+        selected: c.selected !== false,
+      }));
 
+    user.wishlist = wishlist || [];
+
+    user.addresses = (addresses || []).map((a) => ({
+      label: a.label || `${a.pincode || ''} - ${a.city || ''}, ${a.state || ''}`,
+      name: a.name,
+      line1: a.line1 || a.line || '',
+      line2: a.line2 || '',
+      city: a.city,
+      state: a.state,
+      pincode: a.pincode,
+      phone: a.phone,
+    }));
+
+    await user.save();
     res.json({ success: true });
   } catch (err) {
     console.error('Save user state error:', err);
@@ -218,7 +264,7 @@ app.delete('/api/livestock/:id', async (req, res) => {
   }
 });
 
-// 4. Get Orders
+// 4. Get ALL Orders (admin)
 app.get('/api/orders', async (req, res) => {
   try {
     const orders = await Order.find().sort({ createdAt: -1 });
@@ -228,13 +274,36 @@ app.get('/api/orders', async (req, res) => {
   }
 });
 
-// 5. Create Order
-app.post('/api/orders', async (req, res) => {
+// 4b. Get MY Orders (user-specific)
+app.get('/api/my-orders', authMiddleware, async (req, res) => {
   try {
-    const newOrder = new Order(req.body);
+    const orders = await Order.find({ user: req.user.id }).sort({ createdAt: -1 });
+    res.json(orders);
+  } catch (err) {
+    console.error('My orders error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 5. Create Order (user must be logged in)
+app.post('/api/orders', authMiddleware, async (req, res) => {
+  try {
+    const { customer, date, items, total, status, address } = req.body;
+
+    const newOrder = new Order({
+      user: req.user.id,
+      customer,
+      date,
+      items,
+      total,
+      status: status || 'Processing',
+      // any extra fields (like address) will be ignored by schema
+    });
+
     await newOrder.save();
     res.status(201).json(newOrder);
   } catch (err) {
+    console.error('Create order error:', err);
     res.status(400).json({ error: err.message });
   }
 });
