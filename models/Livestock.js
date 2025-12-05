@@ -1,15 +1,44 @@
-const mongoose = require('mongoose');
+// models/Livestock.js
+const mongoose = require("mongoose");
 
-const livestockSchema = new mongoose.Schema({
-    name: { type: String, required: true },
-    type: { type: String, required: true }, // Goat or Sheep
-    breed: { type: String, required: true },
-    age: { type: String, required: true },
-    price: { type: Number, required: true },
-    image: { type: String, required: true }, // Emoji or URL
-    tags: [String],
-    status: { type: String, default: 'Available' },
-    createdAt: { type: Date, default: Date.now }
-});
+const livestockSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
 
-module.exports = mongoose.model('Livestock', livestockSchema);
+    type: {
+      type: String,
+      required: true,
+      enum: ["Goat", "Sheep", "Buffalo", "Cow", "Other"],
+      default: "Goat",
+    },
+
+    breed: {
+      type: String,
+      trim: true,
+    },
+
+    age: {
+      type: Number,
+      default: 0,
+    },
+
+    price: {
+      type: Number,
+      required: true,
+    },
+
+    image: {
+      type: String,
+      default: "",
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+module.exports = mongoose.model("Livestock", livestockSchema);
