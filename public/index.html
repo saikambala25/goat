@@ -1,72 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>LivestockMart - User Home</title>
-
-    <!-- Tailwind CSS -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LivestockMart - User App</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-
     <style>
-        @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
-
-        body {
-            font-family: "Inter", sans-serif;
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { 
+            font-family: 'Inter', sans-serif;
         }
 
-        /* Hide scrollbars */
-        .hide-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .hide-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Page fade animation */
-        @keyframes fadeInUp {
-            0% {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            100% {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .section-animated {
-            animation: fadeInUp 0.45s ease-out both;
-        }
-
-        /* Card hover animation */
-        .card-animate {
-            transition: all 0.25s ease;
-        }
-        .card-animate:hover {
-            transform: translateY(-4px) scale(1.01);
-            box-shadow: 0 18px 35px rgba(20, 20, 20, 0.15);
-        }
-
-        /* Auth glass UI */
         .auth-glass {
             background: rgba(17, 24, 39, 0.85);
             backdrop-filter: blur(18px);
-            box-shadow: 0 15px 60px rgba(0, 0, 0, 0.6);
         }
-
-        /* Auth animation */
+        .auth-card {
+            position: relative;
+            overflow: hidden;
+        }
         .auth-panel {
             transition: transform 0.45s ease, opacity 0.45s ease;
         }
         .auth-panel-register {
             position: absolute;
             inset: 0;
-            opacity: 0;
             transform: translateX(100%);
+            opacity: 0;
         }
         .auth-card.show-register .auth-panel-login {
             transform: translateX(-100%);
@@ -77,513 +41,493 @@
             opacity: 1;
         }
 
-        /* Animated background */
-        @keyframes bgFlow {
+        /* Page fade / VFX */
+        @keyframes fadeInUp {
             0% {
-                background-position: 0% 0%;
-            }
-            50% {
-                background-position: 100% 100%;
+                opacity: 0;
+                transform: translateY(18px) scale(0.98);
             }
             100% {
-                background-position: 0% 0%;
+                opacity: 1;
+                transform: translateY(0) scale(1);
             }
         }
-
-        .auth-bg-animated {
-            background: radial-gradient(circle at 0% 0%, rgba(52, 211, 153, 0.4), transparent 60%),
-                radial-gradient(circle at 100% 0%, rgba(59, 130, 246, 0.35), transparent 60%),
-                radial-gradient(circle at 50% 100%, rgba(236, 72, 153, 0.25), transparent 60%),
-                #020617;
-            background-size: 140% 140%;
-            animation: bgFlow 18s ease-in-out infinite alternate;
+        .page-fade {
+            animation: fadeInUp 0.5s ease-out both;
         }
 
-        /* Prevent login flicker */
-        body.preload #auth-screen,
-        body.preload #user-app {
-            display: none !important;
+        /* Card hover VFX */
+        .card-animated {
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+        .card-animated:hover {
+            transform: translateY(-4px) scale(1.01);
+            box-shadow: 0 20px 40px rgba(15, 23, 42, 0.14);
+            border-color: rgba(16, 185, 129, 0.35);
+        }
+
+        /* Soft glow behind main content */
+        main::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.08), transparent 50%),
+                        radial-gradient(circle at bottom left, rgba(59, 130, 246, 0.08), transparent 55%);
+            z-index: -1;
         }
     </style>
 </head>
+<body class="h-screen bg-gray-900 text-gray-100">
 
-<body class="bg-gray-900 text-gray-100 h-screen preload">
+    <!-- Toast / popup messages -->
+    <div id="toast-container" class="fixed top-4 right-4 z-40 space-y-3 pointer-events-none"></div>
 
-    <!-- Toast Notifications -->
-    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-3 pointer-events-none"></div>
-
-    <!-- Address Modal -->
-    <div
-        id="address-modal"
-        class="fixed inset-0 z-40 hidden items-center justify-center bg-black/60"
-    >
-        <div class="bg-white rounded-2xl p-6 w-full max-w-md text-gray-800 shadow-xl section-animated">
+    <!-- Address modal (used on checkout / change address) -->
+    <div id="address-modal" class="fixed inset-0 z-30 hidden items-center justify-center bg-black/60">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md text-gray-800 shadow-2xl page-fade">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-semibold">Shipping Address</h3>
-                <button onclick="closeAddressModal()">
-                    <i data-lucide="x" class="w-5 h-5 text-gray-600"></i>
+                <button onclick="closeAddressModal()" class="text-gray-400 hover:text-gray-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-
-            <form id="address-form" class="space-y-3" onsubmit="saveAddress(event)">
+            <p class="text-xs text-gray-500 mb-4">Enter the address where you want to receive your livestock.</p>
+            <form id="address-form" class="space-y-3" onsubmit="submitAddress(event)">
                 <div>
-                    <label class="text-xs font-semibold text-gray-600">Full Name</label>
-                    <input id="addr-name" required class="input-field" />
+                    <label class="block text-xs font-medium text-gray-700">Full Name</label>
+                    <input id="addr-name" type="text" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" required>
                 </div>
-
                 <div>
-                    <label class="text-xs font-semibold text-gray-600">Phone</label>
-                    <input
-                        id="addr-phone"
-                        type="tel"
-                        maxlength="10"
-                        pattern="[0-9]{10}"
-                        required
-                        class="input-field"
-                    />
+                    <label class="block text-xs font-medium text-gray-700">Phone Number</label>
+                    <input id="addr-phone" type="tel" pattern="[0-9]{10}" maxlength="10"
+                           class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                           placeholder="10-digit mobile number" required>
                 </div>
-
                 <div>
-                    <label class="text-xs font-semibold text-gray-600">Address Line 1</label>
-                    <input id="addr-line1" required class="input-field" />
+                    <label class="block text-xs font-medium text-gray-700">Address Line</label>
+                    <textarea id="addr-line" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" rows="2" required></textarea>
                 </div>
-
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700">City</label>
+                        <input id="addr-city" type="text" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700">State</label>
+                        <input id="addr-state" type="text" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" required>
+                    </div>
+                </div>
                 <div>
-                    <label class="text-xs font-semibold text-gray-600">City</label>
-                    <input id="addr-city" required class="input-field" />
+                    <label class="block text-xs font-medium text-gray-700">Pincode</label>
+                    <input id="addr-pincode" type="tel" pattern="[0-9]{6}" maxlength="6"
+                           class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                           placeholder="6-digit pincode" required>
                 </div>
-
-                <div>
-                    <label class="text-xs font-semibold text-gray-600">State</label>
-                    <input id="addr-state" required class="input-field" />
-                </div>
-
-                <div>
-                    <label class="text-xs font-semibold text-gray-600">Pincode</label>
-                    <input
-                        id="addr-pincode"
-                        type="tel"
-                        maxlength="6"
-                        pattern="[0-9]{6}"
-                        required
-                        class="input-field"
-                    />
-                </div>
-
                 <div class="mt-4 flex justify-end gap-3">
-                    <button
-                        type="button"
-                        onclick="closeAddressModal()"
-                        class="px-4 py-2 rounded-lg bg-gray-200 text-gray-700"
-                    >
+                    <button type="button" onclick="closeAddressModal()" class="px-4 py-2 text-sm rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50">
                         Cancel
                     </button>
-                    <button
-                        type="submit"
-                        class="px-4 py-2 rounded-lg bg-emerald-600 text-white"
-                    >
-                        Save
+                    <button type="submit" class="px-4 py-2 text-sm rounded-lg bg-emerald-600 text-white hover:bg-emerald-700">
+                        Save & Continue
                     </button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- AUTH SCREEN -->
-    <div
-        id="auth-screen"
-        class="hidden fixed inset-0 z-30 flex items-center justify-center px-4 auth-bg-animated"
-    >
-        <div
-            class="max-w-5xl w-full grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch section-animated"
-        >
-            <!-- Left Welcome Section -->
+    <!-- AUTH SCREEN (shown when not logged in) -->
+    <div id="auth-screen" class="hidden fixed inset-0 z-20 flex items-center justify-center px-4 bg-gradient-to-br from-green-900 via-gray-900 to-black">
+        <div class="max-w-5xl w-full grid grid-cols-1 md:grid-cols-2 gap-8 items-stretch">
+            <!-- Left: marketing / welcome -->
             <div class="hidden md:flex flex-col justify-between text-white">
                 <div>
-                    <div class="flex items-center gap-3 mb-4">
-                        <div
-                            class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-lg font-bold"
-                        >
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center font-bold text-lg">
                             L
                         </div>
                         <span class="text-2xl font-bold tracking-tight">LivestockMart</span>
                     </div>
-                    <h1 class="text-3xl font-bold leading-tight mb-3">
-                        Manage goats & sheep effortlessly.
+                    <h1 class="text-3xl md:text-4xl font-bold leading-tight mb-4">
+                        Manage your goats & sheep<br>like a modern marketplace.
                     </h1>
                     <p class="text-sm text-emerald-100/80">
-                        Smart shopping, fast checkout & friendly UI.
+                        Realtime livestock listings, smart orders, and a smooth shopping experience –
+                        all in one dashboard. Login or create an account to get started.
                     </p>
+                </div>
+                <div class="flex items-center gap-3 text-xs text-emerald-100/70 mt-8">
+                    <i data-lucide="shield-check" class="w-4 h-4"></i>
+                    <span>Secure authentication • Data stored safely in MongoDB</span>
                 </div>
             </div>
 
-            <!-- Right Auth Card -->
-            <div
-                id="auth-card"
-                class="auth-card auth-glass rounded-3xl p-6 sm:p-8 border border-white/10 relative"
-            >
+            <!-- Right: auth card -->
+            <div id="auth-card" class="auth-card auth-glass rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/10 page-fade">
                 <!-- LOGIN PANEL -->
                 <div class="auth-panel auth-panel-login">
-                    <h2 class="text-xl font-bold text-white mb-6">Welcome Back</h2>
-
-                    <form id="login-form" class="space-y-4">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-9 h-9 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                            <i data-lucide="lock" class="w-4 h-4 text-emerald-400"></i>
+                        </div>
                         <div>
-                            <label class="text-xs text-gray-300">Email</label>
-                            <input
-                                id="login-email"
-                                type="email"
-                                required
-                                class="input-auth"
-                                placeholder="you@example.com"
-                            />
+                            <h2 class="text-xl font-semibold">Welcome back</h2>
+                            <p class="text-xs text-gray-300">Sign in to access your LivestockMart home</p>
+                        </div>
+                    </div>
+
+                    <form id="login-form" class="space-y-4 mt-4">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-gray-200">Email</label>
+                            <input id="login-email" type="email" required
+                                   class="w-full rounded-xl bg-gray-900/70 border border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                   placeholder="you@example.com">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-gray-200">Password</label>
+                            <input id="login-password" type="password" required
+                                   class="w-full rounded-xl bg-gray-900/70 border border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                   placeholder="••••••••">
                         </div>
 
-                        <div>
-                            <label class="text-xs text-gray-300">Password</label>
-                            <input
-                                id="login-password"
-                                type="password"
-                                required
-                                class="input-auth"
-                                placeholder="••••••••"
-                            />
-                        </div>
-
-                        <button
-                            type="submit"
-                            class="btn-auth bg-emerald-500 hover:bg-emerald-600"
-                        >
-                            Login
+                        <button type="submit"
+                                class="w-full mt-2 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-sm font-semibold text-white py-2.5 transition-transform active:scale-[0.98]">
+                            <span>Sign in</span>
+                            <i data-lucide="log-in" class="w-4 h-4"></i>
                         </button>
                     </form>
 
-                    <p class="text-xs text-gray-300 mt-4">
-                        New user?
-                        <button
-                            onclick="switchAuth('register')"
-                            class="text-emerald-400 hover:underline"
-                        >
-                            Create account
+                    <div class="mt-4 text-xs text-gray-300 flex items-center justify-between">
+                        <span>New here?</span>
+                        <button type="button"
+                                onclick="switchAuthView('register')"
+                                class="text-emerald-300 hover:text-emerald-200 font-medium">
+                            Create an account
                         </button>
-                    </p>
+                    </div>
                 </div>
 
                 <!-- REGISTER PANEL -->
                 <div class="auth-panel auth-panel-register">
-                    <h2 class="text-xl font-bold text-white mb-6">Create Account</h2>
-
-                    <form id="register-form" class="space-y-4">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-9 h-9 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                            <i data-lucide="user-plus" class="w-4 h-4 text-emerald-400"></i>
+                        </div>
                         <div>
-                            <label class="text-xs text-gray-300">Full Name</label>
-                            <input id="reg-name" required class="input-auth" />
+                            <h2 class="text-xl font-semibold">Create your account</h2>
+                            <p class="text-xs text-gray-300">Register once and access your home anywhere</p>
+                        </div>
+                    </div>
+
+                    <form id="register-form" class="space-y-4 mt-4">
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-gray-200">Full Name</label>
+                            <input id="register-name" type="text" required
+                                   class="w-full rounded-xl bg-gray-900/70 border border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                   placeholder="Alex Johnson">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-gray-200">Email</label>
+                            <input id="register-email" type="email" required
+                                   class="w-full rounded-xl bg-gray-900/70 border border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                   placeholder="you@example.com">
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="text-xs font-medium text-gray-200">Password</label>
+                            <input id="register-password" type="password" required
+                                   class="w-full rounded-xl bg-gray-900/70 border border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                                   placeholder="Create a strong password">
                         </div>
 
-                        <div>
-                            <label class="text-xs text-gray-300">Email</label>
-                            <input
-                                id="reg-email"
-                                type="email"
-                                required
-                                class="input-auth"
-                            />
-                        </div>
-
-                        <div>
-                            <label class="text-xs text-gray-300">Password</label>
-                            <input
-                                id="reg-password"
-                                type="password"
-                                required
-                                class="input-auth"
-                            />
-                        </div>
-
-                        <button
-                            type="submit"
-                            class="btn-auth bg-emerald-500 hover:bg-emerald-600"
-                        >
-                            Register
+                        <button type="submit"
+                                class="w-full mt-2 inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-sm font-semibold text-white py-2.5 transition-transform active:scale-[0.98]">
+                            <span>Create account</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4"></i>
                         </button>
                     </form>
 
-                    <p class="text-xs text-gray-300 mt-4">
-                        Already have an account?
-                        <button
-                            onclick="switchAuth('login')"
-                            class="text-emerald-400 hover:underline"
-                        >
-                            Login
+                    <div class="mt-4 text-xs text-gray-300 flex items-center justify-between">
+                        <span>Already registered?</span>
+                        <button type="button"
+                                onclick="switchAuthView('login')"
+                                class="text-emerald-300 hover:text-emerald-200 font-medium">
+                            Back to login
                         </button>
-                    </p>
+                    </div>
                 </div>
 
-                <p id="auth-error" class="hidden text-red-300 text-xs mt-4"></p>
+                <div id="auth-error" class="mt-4 text-xs text-red-300 hidden"></div>
             </div>
         </div>
-    </div>     <!-- MAIN USER APP -->
-    <div id="user-app" class="hidden h-screen flex overflow-hidden">
+    </div>
 
-        <!-- SIDEBAR -->
-        <aside class="w-64 bg-gray-800 text-gray-200 p-6 space-y-6 hide-scrollbar overflow-y-auto">
-            <div class="flex items-center gap-3 mb-6">
-                <div class="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center text-lg font-bold">
-                    L
-                </div>
-                <span class="text-xl font-bold">LivestockMart</span>
+    <!-- MAIN APP (hidden until login) -->
+    <div id="user-app" class="hidden h-screen w-full bg-gray-50 text-gray-800 flex overflow-hidden relative">
+
+        <!-- Sidebar -->
+        <aside class="w-64 bg-white border-r border-gray-200 flex flex-col z-10 hidden md:flex">
+            <div class="p-6 flex items-center gap-3">
+                <div class="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">L</div>
+                <span class="text-xl font-bold text-gray-800">LivestockMart</span>
             </div>
 
-            <nav class="space-y-3">
-                <button onclick="switchView('home')" class="nav-btn">
-                    <i data-lucide="home"></i> My Home
+            <nav class="flex-1 px-4 space-y-2 overflow-y-auto">
+                <button onclick="router('browse')" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i data-lucide="home" class="w-5 h-5"></i> Browse Livestock
                 </button>
-
-                <button onclick="switchView('browse')" class="nav-btn">
-                    <i data-lucide="search"></i> Browse Livestock
+                <button onclick="router('dashboard')" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i> My Home
                 </button>
-
-                <button onclick="switchView('wishlist')" class="nav-btn">
-                    <i data-lucide="heart"></i> Wishlist
+                <button onclick="router('cart')" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i data-lucide="shopping-cart" class="w-5 h-5"></i> Shopping Cart
+                    <span id="cart-badge" class="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full hidden">0</span>
                 </button>
-
-                <button onclick="switchView('cart')" class="nav-btn">
-                    <i data-lucide="shopping-cart"></i> Shopping Cart
+                <button onclick="router('orders')" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i data-lucide="package" class="w-5 h-5"></i> My Orders
                 </button>
-
-                <button onclick="switchView('orders')" class="nav-btn">
-                    <i data-lucide="receipt"></i> My Orders
+                <button onclick="router('wishlist')" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i data-lucide="heart" class="w-5 h-5"></i> Wishlist
                 </button>
-
-                <button onclick="switchView('addresses')" class="nav-btn">
-                    <i data-lucide="map-pin"></i> Addresses
+                <button onclick="router('addresses')" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i data-lucide="map-pin" class="w-5 h-5"></i> Addresses
+                </button>
+                <button onclick="router('profile')" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i data-lucide="user" class="w-5 h-5"></i> Profile
+                </button>
+                <button onclick="router('support')" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                    <i data-lucide="headphones" class="w-5 h-5"></i> Support
                 </button>
             </nav>
         </aside>
 
-        <!-- MAIN CONTENT -->
-        <main class="flex-1 bg-gray-900 overflow-y-auto hide-scrollbar p-6 space-y-6">
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col relative overflow-hidden">
+            <!-- Header -->
+            <header class="bg-white/90 backdrop-blur border-b border-gray-200 px-4 md:px-8 py-4 flex justify-between items-center z-10">
+                <div>
+                    <h1 id="page-title" class="text-2xl font-bold text-gray-800">My Home</h1>
+                    <p class="text-sm text-gray-500" id="current-date"></p>
+                </div>
+                <div class="flex items-center gap-4 md:gap-6">
+                    <div class="relative cursor-pointer" onclick="router('cart')">
+                        <i data-lucide="shopping-cart" class="w-6 h-6 text-gray-600"></i>
+                        <span id="header-cart-badge" class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full hidden">0</span>
+                    </div>
 
-            <!-- HEADER -->
-            <header class="flex items-center justify-between bg-gray-800 p-4 rounded-xl shadow-lg">
-                <h2 id="page-title" class="text-xl font-semibold">My Home</h2>
-
-                <div class="relative">
-                    <button onclick="toggleProfileMenu()" class="flex items-center gap-2">
-                        <div class="w-9 h-9 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold">
-                            <span id="profile-initial">U</span>
-                        </div>
-                        <i data-lucide="chevron-down" class="text-gray-300"></i>
-                    </button>
-
-                    <div
-                        id="profile-menu"
-                        class="hidden absolute right-0 mt-2 bg-gray-700 rounded-lg shadow-xl overflow-hidden w-40 text-sm z-50"
-                    >
-                        <div class="px-4 py-2 text-gray-200 border-b border-gray-600 font-semibold">
-                            <span id="profile-name">User</span>
-                        </div>
-                        <button
-                            onclick="logout()"
-                            class="w-full px-4 py-2 text-left text-red-400 hover:bg-gray-600"
-                        >
-                            Logout
+                    <!-- Profile dropdown -->
+                    <div class="relative">
+                        <button id="profile-button"
+                                onclick="toggleProfileMenu()"
+                                class="flex items-center gap-2 md:gap-3 focus:outline-none">
+                            <div id="profile-avatar"
+                                 class="w-9 h-9 md:w-10 md:h-10 bg-green-100 rounded-full flex items-center justify-center text-green-700 font-bold text-sm md:text-base">
+                                U
+                            </div>
+                            <div class="hidden md:block text-left">
+                                <p id="profile-name" class="text-sm font-semibold">User</p>
+                                <p id="profile-meta" class="text-xs text-gray-500">Welcome</p>
+                            </div>
+                            <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 hidden md:block"></i>
                         </button>
+
+                        <div id="profile-menu"
+                             class="absolute right-0 mt-2 w-44 bg-white border border-gray-100 rounded-lg shadow-lg py-1 hidden">
+                            <button onclick="router('profile'); toggleProfileMenu(false);"
+                                    class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2">
+                                <i data-lucide="user" class="w-4 h-4"></i>
+                                <span>Profile</span>
+                            </button>
+                            <button onclick="handleLogout()"
+                                    class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2">
+                                <i data-lucide="log-out" class="w-4 h-4"></i>
+                                <span>Logout</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </header>
 
-            <!-- DASHBOARD HOME -->
-            <section id="home-view" class="section-animated">
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <!-- Content Views -->
+            <div id="content-area" class="flex-1 overflow-y-auto p-4 md:p-8 bg-gray-50 hide-scrollbar">
 
-                    <!-- Total Livestock -->
-                    <div class="bg-gray-800 p-6 rounded-xl card-animate">
-                        <p class="text-gray-400">Total Livestock</p>
-                        <h3 id="total-livestock" class="text-3xl font-bold mt-2">0</h3>
+                <!-- HOME / DASHBOARD VIEW -->
+                <div id="view-dashboard" class="space-y-6 page-fade">
+                    <!-- Stats Cards (Total Livestock first, Total Spent last) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <!-- Total Livestock FIRST -->
+                        <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center card-animated">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">Total Livestock</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="dash-total-livestock">0</h3>
+                            </div>
+                            <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xl">🐐</div>
+                        </div>
+                        <!-- My Orders -->
+                        <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center card-animated">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">My Orders</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="dash-total-orders">0</h3>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xl">📦</div>
+                        </div>
+                        <!-- Wishlist -->
+                        <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center card-animated">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">Wishlist</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="dash-total-wishlist">0</h3>
+                            </div>
+                            <div class="w-12 h-12 bg-pink-100 text-pink-600 rounded-full flex items-center justify-center text-xl">❤️</div>
+                        </div>
+                        <!-- Total Spent LAST -->
+                        <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center card-animated">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">Total Spent</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="dash-total-spent">0</h3>
+                            </div>
+                            <div class="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center text-xl">💰</div>
+                        </div>
                     </div>
 
-                    <!-- Wishlist Count -->
-                    <div class="bg-gray-800 p-6 rounded-xl card-animate">
-                        <p class="text-gray-400">Wishlist Items</p>
-                        <h3 id="wishlist-count" class="text-3xl font-bold mt-2">0</h3>
+                    <!-- Recent Orders -->
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm card-animated">
+                        <div class="p-6 border-b border-gray-200">
+                            <h3 class="font-bold text-gray-800">Recent Orders</h3>
+                        </div>
+                        <div class="p-6 space-y-4" id="dash-recent-orders"></div>
                     </div>
-
-                    <!-- Cart Count -->
-                    <div class="bg-gray-800 p-6 rounded-xl card-animate">
-                        <p class="text-gray-400">Cart Items</p>
-                        <h3 id="cart-count" class="text-3xl font-bold mt-2">0</h3>
-                    </div>
-
-                    <!-- Total Spent -->
-                    <div class="bg-gray-800 p-6 rounded-xl card-animate col-span-1 sm:col-span-3">
-                        <p class="text-gray-400">Total Spent (INR)</p>
-                        <h3 id="total-spent" class="text-3xl font-bold mt-2">₹0</h3>
-                    </div>
-
                 </div>
-            </section>
 
-            <!-- BROWSE LIVESTOCK -->
-            <section id="browse-view" class="hidden section-animated">
-                <h3 class="text-lg font-semibold mb-4">Available Livestock</h3>
+                <!-- BROWSE LIVESTOCK VIEW -->
+                <div id="view-browse" class="hidden space-y-6 page-fade">
+                    <div class="flex flex-col md:flex-row gap-4 justify-between">
+                        <div class="relative flex-1 max-w-md">
+                            <i data-lucide="search" class="absolute left-3 top-3 w-5 h-5 text-gray-400"></i>
+                            <input type="text" id="search-input" oninput="renderBrowse()" placeholder="Search by name or breed..." class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500">
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="filterCategory('All')" class="filter-btn px-4 py-2 bg-gray-800 text-white rounded-lg text-sm font-medium">All</button>
+                            <button onclick="filterCategory('Goat')" class="filter-btn px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50">Goats</button>
+                            <button onclick="filterCategory('Sheep')" class="filter-btn px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50">Sheep</button>
+                        </div>
+                    </div>
 
-                <div id="browse-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-            </section>
+                    <div id="livestock-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                </div>
 
-            <!-- WISHLIST -->
-            <section id="wishlist-view" class="hidden section-animated">
-                <h3 class="text-lg font-semibold mb-4">Your Wishlist</h3>
+                <!-- SHOPPING CART VIEW -->
+                <div id="view-cart" class="hidden space-y-6 page-fade">
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 card-animated">
+                        <h3 class="font-bold text-lg mb-6">Shopping Cart <span id="cart-count-title" class="text-gray-400 text-sm font-normal">(0 items)</span></h3>
+                        <div id="cart-items-container" class="space-y-6">
+                            <div class="text-center py-10 text-gray-400">Your cart is empty</div>
+                        </div>
+                        <div class="mt-8 pt-6 border-t border-gray-100 flex justify-between items-center">
+                            <h3 class="text-xl font-bold">Total: <span id="cart-total">0</span></h3>
+                            <button onclick="checkout()" class="bg-gray-800 text-white px-8 py-3 rounded-lg font-medium hover:bg-gray-900 transition">Proceed to Checkout</button>
+                        </div>
+                    </div>
+                </div>
 
-                <div id="wishlist-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
-            </section>
+                <!-- ORDERS VIEW -->
+                <div id="view-orders" class="hidden space-y-6 page-fade">
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 card-animated">
+                        <h3 class="font-bold text-lg mb-6">Order History</h3>
+                        <div class="space-y-4" id="orders-list-full"></div>
+                    </div>
+                </div>
 
-            <!-- CART -->
-            <section id="cart-view" class="hidden section-animated">
-                <h3 class="text-lg font-semibold mb-4">Shopping Cart</h3>
+                <!-- WISHLIST VIEW -->
+                <div id="view-wishlist" class="hidden space-y-6 page-fade">
+                     <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-xl">My Wishlist</h3>
+                     </div>
+                     <div id="wishlist-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                </div>
+                
+                <!-- ADDRESSES VIEW -->
+                <div id="view-addresses" class="hidden space-y-6 page-fade">
+                    <div class="bg-white p-6 rounded-xl border shadow-sm card-animated">
+                        <h3 class="font-bold text-lg mb-4">Saved Addresses</h3>
+                        <div id="addresses-container" class="space-y-4">
+                            <!-- Filled by JS -->
+                        </div>
+                    </div>
+                </div>
 
-                <div id="cart-list" class="space-y-4"></div>
+                <!-- PROFILE VIEW -->
+                <div id="view-profile" class="hidden space-y-6 page-fade">
+                    <div class="bg-white p-6 rounded-xl border shadow-sm card-animated">
+                        <h3 class="font-bold text-lg mb-4">Profile Settings</h3>
+                        <div class="space-y-4 max-w-md">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Full Name</label>
+                                <input id="profile-name-input" type="text" value="" disabled
+                                       class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 bg-gray-100 cursor-not-allowed">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Email</label>
+                                <input id="profile-email-input" type="email" value="" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2" disabled>
+                            </div>
+                            <p class="text-xs text-gray-400">Profile is based on your login data.</p>
+                        </div>
+                    </div>
+                </div>
 
-                <button
-                    onclick="proceedToCheckout()"
-                    class="mt-6 w-full bg-emerald-600 hover:bg-emerald-700 py-3 rounded-xl text-white font-semibold"
-                >
-                    Proceed to Checkout
-                </button>
-            </section>
+                <!-- SUPPORT VIEW -->
+                <div id="view-support" class="hidden space-y-6 page-fade">
+                    <div class="bg-white p-6 rounded-xl border shadow-sm text-center py-12 card-animated">
+                        <i data-lucide="headphones" class="w-12 h-12 mx-auto text-green-600 mb-4"></i>
+                        <h3 class="font-bold text-lg">Need Help?</h3>
+                        <p class="text-gray-500 mb-4">Contact our support team 24/7</p>
+                        <button class="bg-green-600 text-white px-6 py-2 rounded-full hover:bg-green-700 transition">Start Chat</button>
+                    </div>
+                </div>
 
-            <!-- ORDERS -->
-            <section id="orders-view" class="hidden section-animated">
-                <h3 class="text-lg font-semibold mb-4">My Orders</h3>
-
-                <div id="orders-list" class="space-y-4"></div>
-            </section>
-
-            <!-- ADDRESSES -->
-            <section id="addresses-view" class="hidden section-animated">
-                <h3 class="text-lg font-semibold mb-4">My Addresses</h3>
-
-                <div id="addresses-list" class="space-y-4"></div>
-
-                <button
-                    onclick="openAddressModal()"
-                    class="mt-4 bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg text-white"
-                >
-                    Add New Address
-                </button>
-            </section>
-
+            </div>
         </main>
     </div>
-     <script>
-        const API_BASE = "/api";
 
-        let currentUser = null;
-        let livestockData = [];
-        let userState = {
-            cart: [],
-            wishlist: [],
-            addresses: []
-        };
+    <script>
+        const API_URL = '/api';
+
+        let livestock = [];
         let orders = [];
+
+        let cart = [];
+        let wishlist = [];
+        let currentCategory = 'All';
+        let currentUser = null;
+        let appInitialized = false;
+        let currentAddress = null;
         let pendingCheckoutItems = null;
 
-        // Inject CSS for custom utility classes
-        (function injectCustomStyles() {
-            const css = `
-            .nav-btn {
-                @apply w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-300 hover:bg-gray-700 transition;
-            }
-            .nav-btn-active {
-                @apply bg-emerald-600 text-white;
-            }
-            .input-auth {
-                @apply w-full rounded-xl bg-gray-900/70 border border-gray-700 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500;
-            }
-            .input-field {
-                @apply w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500;
-            }
-            .btn-auth {
-                @apply w-full mt-4 py-2.5 rounded-xl text-sm font-semibold text-white flex items-center justify-center;
-            }
-            `;
-            // Tailwind's @apply won't be processed at runtime, so fallback manual classes:
-            const cssFallback = `
-            .nav-btn {
-                width: 100%;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-                padding: 0.5rem 0.75rem;
-                border-radius: 0.5rem;
-                font-size: 0.875rem;
-                color: #e5e7eb;
-                transition: background-color 0.2s ease, color 0.2s ease;
-            }
-            .nav-btn i {
-                width: 1rem;
-                height: 1rem;
-            }
-            .nav-btn:hover {
-                background-color: #374151;
-            }
-            .nav-btn-active {
-                background-color: #059669;
-                color: #ffffff;
-            }
-            .input-auth {
-                width: 100%;
-                border-radius: 0.75rem;
-                border: 1px solid #4b5563;
-                background: rgba(15, 23, 42, 0.9);
-                padding: 0.5rem 0.75rem;
-                font-size: 0.875rem;
-                color: #f9fafb;
-            }
-            .input-field {
-                width: 100%;
-                border-radius: 0.5rem;
-                border: 1px solid #d1d5db;
-                padding: 0.5rem 0.75rem;
-                font-size: 0.875rem;
-            }
-            .btn-auth {
-                width: 100%;
-                margin-top: 1rem;
-                padding: 0.625rem 0.75rem;
-                border-radius: 0.75rem;
-                font-size: 0.875rem;
-                font-weight: 600;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: #ffffff;
-            }
-            `;
-            const style = document.createElement("style");
-            style.textContent = cssFallback;
-            document.head.appendChild(style);
-        })();
-
-        // --- Toast helper ---
-        function showToast(message, type = "info") {
-            const container = document.getElementById("toast-container");
+        // --- Toast popup ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
             if (!container) return;
 
-            const id = "toast-" + Date.now();
-            const toast = document.createElement("div");
-            toast.id = id;
-            toast.className =
-                "pointer-events-auto max-w-xs w-full rounded-xl shadow-lg px-4 py-3 text-sm flex items-start gap-3 transform transition-all duration-200";
+            const id = 'toast-' + Date.now();
+            const baseClasses = 'pointer-events-auto max-w-xs w-full rounded-xl shadow-lg px-4 py-3 text-sm flex items-start gap-3 transform transition-all duration-200';
+            const types = {
+                success: 'bg-emerald-600 text-white',
+                error: 'bg-red-600 text-white',
+                warning: 'bg-yellow-500 text-black',
+                info: 'bg-gray-800 text-white'
+            };
+            const icon = {
+                success: 'check-circle',
+                error: 'alert-triangle',
+                warning: 'alert-circle',
+                info: 'info'
+            }[type] || 'info';
 
-            let bg = "bg-gray-800 text-white";
-            if (type === "success") bg = "bg-emerald-600 text-white";
-            if (type === "error") bg = "bg-red-600 text-white";
-            if (type === "warning") bg = "bg-yellow-500 text-black";
+            const div = document.createElement('div');
+            div.id = id;
+            div.className = baseClasses + ' ' + (types[type] || types.info);
 
-            toast.className += " " + bg;
-
-            toast.innerHTML = `
+            div.innerHTML = `
                 <div class="mt-0.5">
-                    <i data-lucide="info" class="w-4 h-4"></i>
+                    <i data-lucide="${icon}" class="w-4 h-4"></i>
                 </div>
                 <div class="flex-1">${message}</div>
                 <button onclick="document.getElementById('${id}')?.remove()" class="ml-2 text-xs opacity-80 hover:opacity-100">
@@ -591,861 +535,824 @@
                 </button>
             `;
 
-            container.appendChild(toast);
-            if (window.lucide) lucide.createIcons();
+            container.appendChild(div);
+            lucide.createIcons();
 
             setTimeout(() => {
-                toast.classList.add("opacity-0", "translate-x-2");
-                setTimeout(() => toast.remove(), 200);
+                div.classList.add('opacity-0', 'translate-x-2');
+                setTimeout(() => div.remove(), 150);
             }, 3000);
         }
 
-        // --- API helper ---
-        async function api(path, options = {}) {
-            const config = {
-                method: options.method || "GET",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json",
-                    ...(options.headers || {})
-                }
-            };
+        // --- Helpers for INR formatting & user keys ---
 
-            if (options.body) {
-                config.body =
-                    typeof options.body === "string"
-                        ? options.body
-                        : JSON.stringify(options.body);
-            }
-
-            const res = await fetch(API_BASE + path, config);
-            if (!res.ok) {
-                const text = await res.text().catch(() => "");
-                throw new Error(text || "API error");
-            }
-            const ct = res.headers.get("content-type") || "";
-            if (ct.includes("application/json")) {
-                return await res.json();
-            }
-            return null;
-        }
-
-        // --- Format INR ---
         function formatINR(value) {
             const num = Number(value) || 0;
-            return "₹" + num.toLocaleString("en-IN");
+            return num.toLocaleString('en-IN');
         }
 
-        // --- AUTH UI LOGIC ---
+        function userKey(suffix) {
+            if (!currentUser || !currentUser.id) return null;
+            return `lm_${suffix}_${currentUser.id}`;
+        }
 
-        function switchAuth(mode) {
-            const card = document.getElementById("auth-card");
+        function loadUserState() {
+            if (!currentUser || !currentUser.id) return;
+            try {
+                const cKey = userKey('cart');
+                const wKey = userKey('wishlist');
+                const aKey = userKey('address');
+
+                cart = JSON.parse(localStorage.getItem(cKey) || '[]');
+                wishlist = JSON.parse(localStorage.getItem(wKey) || '[]');
+                currentAddress = JSON.parse(localStorage.getItem(aKey) || 'null') || null;
+            } catch {
+                cart = [];
+                wishlist = [];
+                currentAddress = null;
+            }
+        }
+
+        function saveUserState() {
+            if (!currentUser || !currentUser.id) return;
+            try {
+                localStorage.setItem(userKey('cart'), JSON.stringify(cart));
+                localStorage.setItem(userKey('wishlist'), JSON.stringify(wishlist));
+                localStorage.setItem(userKey('address'), JSON.stringify(currentAddress));
+            } catch (e) {
+                console.warn('Could not save user state', e);
+            }
+        }
+
+        // --- AUTH UI HELPERS ---
+
+        function switchAuthView(mode) {
+            const card = document.getElementById('auth-card');
             if (!card) return;
-            if (mode === "register") {
-                card.classList.add("show-register");
+            if (mode === 'register') {
+                card.classList.add('show-register');
             } else {
-                card.classList.remove("show-register");
+                card.classList.remove('show-register');
+            }
+        }
+
+        function showAuthError(message) {
+            const el = document.getElementById('auth-error');
+            if (!el) return;
+            if (message) {
+                el.textContent = message;
+                el.classList.remove('hidden');
+                showToast(message, 'error');
+            } else {
+                el.textContent = '';
+                el.classList.add('hidden');
             }
         }
 
         function showAuthScreen() {
-            document.getElementById("auth-screen").classList.remove("hidden");
-            document.getElementById("user-app").classList.add("hidden");
+            const auth = document.getElementById('auth-screen');
+            const app = document.getElementById('user-app');
+            if (auth) auth.classList.remove('hidden');
+            if (app) app.classList.add('hidden');
         }
 
-        function showUserApp() {
-            document.getElementById("auth-screen").classList.add("hidden");
-            document.getElementById("user-app").classList.remove("hidden");
-        }
+        function showApp() {
+            const auth = document.getElementById('auth-screen');
+            const app = document.getElementById('user-app');
+            if (auth) auth.classList.add('hidden');
+            if (app) app.classList.remove('hidden');
 
-        function setAuthError(msg) {
-            const el = document.getElementById("auth-error");
-            if (!el) return;
-            if (!msg) {
-                el.classList.add("hidden");
-                el.textContent = "";
-            } else {
-                el.classList.remove("hidden");
-                el.textContent = msg;
-                showToast(msg, "error");
+            if (!appInitialized) {
+                initApp();
             }
+        }
+
+        function getInitials(name) {
+            if (!name) return 'U';
+            return name
+                .split(' ')
+                .filter(Boolean)
+                .map(n => n[0].toUpperCase())
+                .join('')
+                .slice(0, 2);
+        }
+
+        function updateProfileUI() {
+            const avatar = document.getElementById('profile-avatar');
+            const nameEl = document.getElementById('profile-name');
+            const metaEl = document.getElementById('profile-meta');
+            const profileNameInput = document.getElementById('profile-name-input');
+            const profileEmailInput = document.getElementById('profile-email-input');
+
+            const name = currentUser?.name || 'User';
+            const email = currentUser?.email || '';
+
+            if (avatar) avatar.textContent = getInitials(name);
+            if (nameEl) nameEl.textContent = name;
+            if (metaEl) metaEl.textContent = 'Welcome back';
+            if (profileNameInput) profileNameInput.value = name;
+            if (profileEmailInput) profileEmailInput.value = email;
+        }
+
+        function toggleProfileMenu(force) {
+            const menu = document.getElementById('profile-menu');
+            if (!menu) return;
+            if (typeof force === 'boolean') {
+                if (force) menu.classList.remove('hidden');
+                else menu.classList.add('hidden');
+                return;
+            }
+            menu.classList.toggle('hidden');
         }
 
         async function handleLogin(event) {
             event.preventDefault();
-            setAuthError("");
+            showAuthError('');
 
-            const email = document.getElementById("login-email").value.trim();
-            const password = document.getElementById("login-password").value.trim();
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value.trim();
 
             if (!email || !password) {
-                setAuthError("Please enter email and password.");
+                showAuthError('Please enter email and password.');
                 return;
             }
 
             try {
-                const data = await api("/auth/login", {
-                    method: "POST",
-                    body: { email, password }
+                const res = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ email, password })
                 });
+
+                const data = await res.json();
+                if (!res.ok) {
+                    showAuthError(data.message || 'Login failed.');
+                    return;
+                }
+
                 currentUser = data.user;
-                await afterAuthLogin();
-                showToast("Logged in successfully.", "success");
+                loadUserState();
+                updateProfileUI();
+                updateCartBadge();
+                showToast('Logged in successfully', 'success');
+                showApp();
             } catch (err) {
-                console.error(err);
-                setAuthError("Login failed. Check your credentials.");
+                console.error('Login error', err);
+                showAuthError('Something went wrong. Please try again.');
             }
         }
 
         async function handleRegister(event) {
             event.preventDefault();
-            setAuthError("");
+            showAuthError('');
 
-            const name = document.getElementById("reg-name").value.trim();
-            const email = document.getElementById("reg-email").value.trim();
-            const password = document.getElementById("reg-password").value.trim();
+            const name = document.getElementById('register-name').value.trim();
+            const email = document.getElementById('register-email').value.trim();
+            const password = document.getElementById('register-password').value.trim();
 
             if (!name || !email || !password) {
-                setAuthError("All fields are required.");
+                showAuthError('All fields are required to register.');
                 return;
             }
 
             try {
-                const data = await api("/auth/register", {
-                    method: "POST",
-                    body: { name, email, password }
+                const res = await fetch(`${API_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ name, email, password })
                 });
+
+                const data = await res.json();
+                if (!res.ok) {
+                    showAuthError(data.message || 'Registration failed.');
+                    return;
+                }
+
                 currentUser = data.user;
-                await afterAuthLogin();
-                showToast("Account created and logged in.", "success");
+                loadUserState();
+                updateProfileUI();
+                updateCartBadge();
+                showToast('Account created & logged in', 'success');
+                showApp();
             } catch (err) {
-                console.error(err);
-                setAuthError("Registration failed. Try a different email.");
+                console.error('Register error', err);
+                showAuthError('Something went wrong. Please try again.');
             }
         }
 
-        async function logout() {
+        async function handleLogout() {
             try {
-                await api("/auth/logout", { method: "POST" });
+                await fetch(`${API_URL}/auth/logout`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
             } catch (err) {
-                console.error("Logout error", err);
+                console.error('Logout error', err);
             }
+
             currentUser = null;
-            userState = { cart: [], wishlist: [], addresses: [] };
-            orders = [];
-            livestockData = [];
-            showToast("Logged out.", "info");
+            cart = [];
+            wishlist = [];
+            currentAddress = null;
+            updateCartBadge();
+            saveUserState();
+
+            toggleProfileMenu(false);
+            showToast('Logged out', 'info');
             showAuthScreen();
-            updateNavActive("home");
-            switchView("home");
         }
 
         async function checkAuth() {
             try {
-                const data = await api("/auth/me");
-                currentUser = data.user;
-                await afterAuthLogin();
-            } catch (err) {
-                console.log("Not logged in");
-                showAuthScreen();
-            } finally {
-                document.body.classList.remove("preload");
-            }
-        }
-
-        async function afterAuthLogin() {
-            updateProfileUI();
-            showUserApp();
-            await loadAllData();
-            updateNavActive("home");
-            switchView("home");
-        }
-
-        function updateProfileUI() {
-            const name = currentUser?.name || "User";
-            const initial = name.trim().charAt(0).toUpperCase();
-            const profileInitial = document.getElementById("profile-initial");
-            const profileName = document.getElementById("profile-name");
-            if (profileInitial) profileInitial.textContent = initial || "U";
-            if (profileName) profileName.textContent = name;
-        }
-
-        // --- NAVIGATION / VIEWS ---
-
-        const VIEW_IDS = ["home", "browse", "wishlist", "cart", "orders", "addresses"];
-
-        const VIEW_TITLES = {
-            home: "My Home",
-            browse: "Browse Livestock",
-            wishlist: "Your Wishlist",
-            cart: "Shopping Cart",
-            orders: "My Orders",
-            addresses: "My Addresses"
-        };
-
-        const NAV_INDEX = {
-            home: 0,
-            browse: 1,
-            wishlist: 2,
-            cart: 3,
-            orders: 4,
-            addresses: 5
-        };
-
-        function switchView(view) {
-            VIEW_IDS.forEach((v) => {
-                const section = document.getElementById(v + "-view");
-                if (!section) return;
-                if (v === view) section.classList.remove("hidden");
-                else section.classList.add("hidden");
-            });
-
-            const title = document.getElementById("page-title");
-            if (title) title.textContent = VIEW_TITLES[view] || "My Home";
-
-            updateNavActive(view);
-
-            // re-render icons after DOM changes
-            if (window.lucide) lucide.createIcons();
-
-            // If we switch to certain views, re-render their content
-            if (view === "home") {
-                updateHomeStats();
-            } else if (view === "browse") {
-                renderBrowse();
-            } else if (view === "wishlist") {
-                renderWishlist();
-            } else if (view === "cart") {
-                renderCart();
-            } else if (view === "orders") {
-                renderOrders();
-            } else if (view === "addresses") {
-                renderAddresses();
-            }
-        }
-
-        function updateNavActive(view) {
-            const buttons = document.querySelectorAll(".nav-btn");
-            buttons.forEach((btn, idx) => {
-                btn.classList.remove("nav-btn-active");
-                const targetIndex = NAV_INDEX[view];
-                if (typeof targetIndex === "number" && idx === targetIndex) {
-                    btn.classList.add("nav-btn-active");
+                const res = await fetch(`${API_URL}/auth/me`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    currentUser = data.user;
+                    loadUserState();
+                    updateProfileUI();
+                    updateCartBadge();
+                    showApp();
+                } else {
+                    showAuthScreen();
                 }
-            });
-        }
-
-        // Profile menu
-        function toggleProfileMenu() {
-            const menu = document.getElementById("profile-menu");
-            if (!menu) return;
-            if (menu.classList.contains("hidden")) {
-                menu.classList.remove("hidden");
-            } else {
-                menu.classList.add("hidden");
+            } catch (err) {
+                console.error('Auth check error', err);
+                showAuthScreen();
             }
         }
 
-        document.addEventListener("click", (e) => {
-            const menu = document.getElementById("profile-menu");
-            const btn = e.target.closest("#profile-button");
-            if (!menu) return;
-            const clickedInsideMenu = menu.contains(e.target);
-            if (!clickedInsideMenu && !btn) {
-                menu.classList.add("hidden");
-            }
-        });
+        // --- ORDER FILTERING: ensure each user sees only their own orders ---
+
+        function orderBelongsToCurrentUser(order) {
+            if (!currentUser || !order) return false;
+            const userId = currentUser.id || currentUser._id;
+            const email = currentUser.email;
+            const name = currentUser.name;
+
+            // Common patterns from backend
+            if (order.userId && userId && order.userId === userId) return true;
+            if (order.user && userId && (order.user === userId || order.user._id === userId || order.user.id === userId)) return true;
+            if (order.userEmail && email && order.userEmail === email) return true;
+            if (order.customerEmail && email && order.customerEmail === email) return true;
+
+            // Fallback: match by customer name (as we send in createOrder)
+            if (order.customer && name && order.customer === name) return true;
+
+            return false;
+        }
+
+        function filterOrdersForCurrentUser(list) {
+            const arr = Array.isArray(list) ? list : [];
+            if (!currentUser) return arr;
+
+            // If there is no user information on any order, assume backend already filtered.
+            const hasUserHint = arr.some(o => o && (o.userId || o.user || o.userEmail || o.customerEmail || o.customer));
+            if (!hasUserHint) return arr;
+
+            const filtered = arr.filter(orderBelongsToCurrentUser);
+            return filtered;
+        }
 
         // --- DATA LOADING ---
 
-        async function loadAllData() {
+        async function loadData() {
             try {
-                await Promise.all([loadUserStateFromDB(), loadLivestock(), loadOrders()]);
-                updateHomeStats();
-                renderBrowse();
-                renderWishlist();
-                renderCart();
-                renderOrders();
-                renderAddresses();
-            } catch (err) {
-                console.error("Error loading data:", err);
-                showToast("Error loading data from server.", "error");
-            }
-        }
+                const lsRes = await fetch(`${API_URL}/livestock`);
+                livestock = await lsRes.json();
 
-        async function loadUserStateFromDB() {
-            try {
-                const data = await api("/user/state");
-                userState = {
-                    cart: data.cart || [],
-                    wishlist: data.wishlist || [],
-                    addresses: data.addresses || []
-                };
-            } catch (err) {
-                console.error("User state load error:", err);
-                userState = { cart: [], wishlist: [], addresses: [] };
-            }
-        }
-
-        async function saveUserStateToDB() {
-            try {
-                await api("/user/state", {
-                    method: "PUT",
-                    body: userState
+                const ordRes = await fetch(`${API_URL}/orders`, {
+                    credentials: 'include'
                 });
-            } catch (err) {
-                console.error("User state save error:", err);
-                showToast("Could not save your changes. Please try again.", "warning");
+                const allOrders = await ordRes.json();
+                orders = filterOrdersForCurrentUser(allOrders);
+
+                const activeNav = document.querySelector('.nav-item.bg-green-600');
+                let currentView = 'dashboard';
+                if (activeNav) {
+                    const onclick = activeNav.getAttribute('onclick') || "";
+                    currentView = onclick.replace("router('", "").replace("')", "") || 'dashboard';
+                }
+
+                if (currentView === 'dashboard') renderDashboard();
+                if (currentView === 'browse') renderBrowse();
+                if (currentView === 'orders') renderOrders();
+            } catch (e) {
+                console.error("API Error", e);
+                showToast('Failed to load data from server', 'error');
             }
         }
 
-        async function loadLivestock() {
-            const data = await api("/livestock");
-            livestockData = Array.isArray(data) ? data : [];
+        // --- ROUTING ---
+
+        function router(viewName) {
+            loadData();
+
+            const titles = {
+                'dashboard': 'My Home',
+                'browse': 'Browse Livestock',
+                'cart': 'Shopping Cart',
+                'orders': 'My Orders',
+                'wishlist': 'My Wishlist',
+                'addresses': 'Addresses',
+                'profile': 'My Profile',
+                'support': 'Support'
+            };
+            document.getElementById('page-title').innerText = titles[viewName] || 'My Home';
+
+            const views = ['dashboard', 'browse', 'cart', 'orders', 'wishlist', 'addresses', 'profile', 'support'];
+            views.forEach(v => document.getElementById(`view-${v}`)?.classList.add('hidden'));
+
+            const activeView = document.getElementById(`view-${viewName}`);
+            if (activeView) activeView.classList.remove('hidden');
+
+            document.querySelectorAll('.nav-item').forEach(btn => {
+                if (btn.getAttribute('onclick').includes(viewName)) {
+                    btn.classList.add('bg-green-600', 'text-white');
+                    btn.classList.remove('text-gray-600', 'hover:bg-gray-100');
+                } else {
+                    btn.classList.remove('bg-green-600', 'text-white');
+                    btn.classList.add('text-gray-600', 'hover:bg-gray-100');
+                }
+            });
+
+            if (viewName === 'dashboard') renderDashboard();
+            if (viewName === 'browse') renderBrowse();
+            if (viewName === 'cart') renderCart();
+            if (viewName === 'orders') renderOrders();
+            if (viewName === 'wishlist') renderWishlist();
+            if (viewName === 'addresses') renderAddresses();
+
+            lucide.createIcons();
         }
 
-        async function loadOrders() {
-            const data = await api("/orders");
-            orders = Array.isArray(data) ? data : [];
+        // --- RENDER FUNCTIONS ---
+
+        function renderDashboard() {
+            const totalSpent = orders.reduce((sum, order) => sum + (order.total || 0), 0);
+            document.getElementById('dash-total-spent').innerText = formatINR(totalSpent);
+            document.getElementById('dash-total-orders').innerText = orders.length;
+            document.getElementById('dash-total-wishlist').innerText = wishlist.length;
+            document.getElementById('dash-total-livestock').innerText = livestock.length;
+
+            const recentContainer = document.getElementById('dash-recent-orders');
+            if (orders.length === 0) {
+                recentContainer.innerHTML = '<p class="text-gray-500 text-sm">No orders yet.</p>';
+            } else {
+                const recent = orders.slice(0, 3);
+                recentContainer.innerHTML = recent.map(o => `
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg card-animated">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-white rounded flex items-center justify-center text-2xl">📦</div>
+                            <div>
+                                <p class="font-bold text-gray-800">${o.items[0].name} ${o.items.length > 1 ? '+' + (o.items.length - 1) + ' more' : ''}</p>
+                                <p class="text-xs text-gray-500">#${String(o._id).slice(-6)} • ${o.date}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-bold">${formatINR(o.total)}</p>
+                            <span class="text-xs px-2 py-1 ${getStatusColor(o.status)} rounded-full font-medium">${o.status}</span>
+                        </div>
+                    </div>
+                `).join('');
+            }
         }
 
-        // --- HOME STATS ---
-
-        function updateHomeStats() {
-            const totalLivestockEl = document.getElementById("total-livestock");
-            const wishlistCountEl = document.getElementById("wishlist-count");
-            const cartCountEl = document.getElementById("cart-count");
-            const totalSpentEl = document.getElementById("total-spent");
-
-            if (totalLivestockEl) totalLivestockEl.textContent = livestockData.length || 0;
-            if (wishlistCountEl) wishlistCountEl.textContent = userState.wishlist.length || 0;
-            if (cartCountEl) cartCountEl.textContent = userState.cart.length || 0;
-
-            const totalSpent = orders.reduce((sum, o) => sum + (o.total || 0), 0);
-            if (totalSpentEl) totalSpentEl.textContent = formatINR(totalSpent);
+        function filterCategory(cat) {
+            currentCategory = cat;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn.innerText === cat || (cat === 'All' && btn.innerText === 'All')) {
+                    btn.classList.add('bg-gray-800', 'text-white');
+                    btn.classList.remove('bg-white', 'text-gray-600', 'border');
+                } else {
+                    btn.classList.remove('bg-gray-800', 'text-white');
+                    btn.classList.add('bg-white', 'text-gray-600', 'border');
+                }
+            });
+            renderBrowse();
         }
-
-        // --- BROWSE RENDER ---
 
         function renderBrowse() {
-            const container = document.getElementById("browse-list");
-            if (!container) return;
+            const searchInput = document.getElementById('search-input');
+            if (!searchInput) return;
 
-            if (!livestockData.length) {
-                container.innerHTML =
-                    '<p class="text-gray-400">No livestock available right now.</p>';
+            const searchTerm = searchInput.value.toLowerCase();
+            const grid = document.getElementById('livestock-grid');
+            
+            const filtered = livestock.filter(item => {
+                const matchSearch = item.name.toLowerCase().includes(searchTerm) || item.breed.toLowerCase().includes(searchTerm);
+                const matchCat = currentCategory === 'All' || item.type === currentCategory;
+                return matchSearch && matchCat;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="col-span-3 text-center text-gray-500 py-10">No livestock found matching your criteria.</div>';
                 return;
             }
 
-            container.innerHTML = livestockData
-                .map((item) => {
-                    const inWishlist = userState.wishlist.includes(String(item._id));
-                    return `
-                    <div class="bg-gray-800 rounded-xl p-4 flex flex-col gap-3 card-animate">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <p class="text-sm text-gray-400">${item.type || ""}</p>
-                                <h4 class="text-lg font-semibold">${item.name || "Livestock"}</h4>
-                                <p class="text-xs text-gray-400">${item.breed || ""}</p>
-                            </div>
-                            <button
-                                onclick="toggleWishlist('${item._id}')"
-                                class="p-2 rounded-full ${
-                                    inWishlist ? "bg-red-500 text-white" : "bg-gray-700 text-gray-200"
-                                }"
-                            >
-                                <i data-lucide="heart" class="w-4 h-4"></i>
+            grid.innerHTML = filtered.map(item => {
+                const inWishlist = wishlist.includes(item._id);
+                return `
+                <div class="bg-white p-4 rounded-xl border border-gray-200 hover:shadow-lg transition-shadow card-animated">
+                    <div class="h-40 bg-gray-100 rounded-lg flex items-center justify-center text-6xl mb-4 relative overflow-hidden">
+                        ${item.image}
+                        <button onclick="toggleWishlist('${item._id}')" class="absolute top-2 right-2 p-2 bg-white rounded-full shadow-sm hover:text-red-500 ${inWishlist ? 'text-red-500' : 'text-gray-400'}">
+                            <i data-lucide="heart" class="w-4 h-4 ${inWishlist ? 'fill-current' : ''}"></i>
+                        </button>
+                    </div>
+                    <div class="flex justify-between items-start mb-2">
+                        <div>
+                            <h3 class="font-bold text-lg text-gray-800">${item.name}</h3>
+                            <p class="text-xs text-gray-500">${item.breed} • ${item.age}</p>
+                        </div>
+                        <span class="bg-gray-800 text-white text-xs px-2 py-1 rounded">${item.tags?.[0] || 'Good'}</span>
+                    </div>
+                    <div class="flex items-center justify-between mt-4">
+                        <span class="text-xl font-bold text-green-700">${formatINR(item.price)}</span>
+                        <div class="flex gap-2">
+                            <button onclick="buyNow('${item._id}')" class="bg-emerald-600 text-white px-3 py-2 rounded-lg text-xs md:text-sm hover:bg-emerald-700 transition">
+                                Buy Now
                             </button>
-                        </div>
-
-                        <div class="flex items-center justify-between mt-3">
-                            <p class="text-xl font-bold text-emerald-400">
-                                ${formatINR(item.price || 0)}
-                            </p>
-                        </div>
-
-                        <div class="flex gap-2 mt-3">
-                            <button
-                                onclick="addToCart('${item._id}')"
-                                class="flex-1 bg-gray-700 hover:bg-gray-600 py-2 rounded-lg text-sm text-gray-100"
-                            >
+                            <button onclick="addToCart('${item._id}')" class="bg-gray-900 text-white px-3 py-2 rounded-lg text-xs md:text-sm hover:bg-gray-800 transition">
                                 Add to Cart
                             </button>
-                            <button
-                                onclick="buyNow('${item._id}')"
-                                class="flex-1 bg-emerald-600 hover:bg-emerald-700 py-2 rounded-lg text-sm text-white"
-                            >
-                                Buy
-                            </button>
                         </div>
                     </div>
-                `;
-                })
-                .join("");
-
-            if (window.lucide) lucide.createIcons();
+                </div>
+            `}).join('');
+            lucide.createIcons();
         }
-
-        // --- WISHLIST RENDER ---
-
-        function renderWishlist() {
-            const container = document.getElementById("wishlist-list");
-            if (!container) return;
-
-            const items = livestockData.filter((x) =>
-                userState.wishlist.includes(String(x._id))
-            );
-
-            if (!items.length) {
-                container.innerHTML =
-                    '<p class="text-gray-400">Your wishlist is empty.</p>';
-                return;
-            }
-
-            container.innerHTML = items
-                .map((item) => {
-                    return `
-                    <div class="bg-gray-800 rounded-xl p-4 card-animate flex flex-col gap-3">
-                        <div class="flex justify-between items-start">
-                            <div>
-                                <h4 class="text-lg font-semibold">${item.name || "Livestock"}</h4>
-                                <p class="text-xs text-gray-400">${item.breed || ""}</p>
-                            </div>
-                            <button
-                                onclick="toggleWishlist('${item._id}')"
-                                class="p-2 rounded-full bg-gray-700 text-gray-200 hover:bg-gray-600"
-                            >
-                                <i data-lucide="x" class="w-4 h-4"></i>
-                            </button>
-                        </div>
-                        <p class="text-xl font-bold text-emerald-400">
-                            ${formatINR(item.price || 0)}
-                        </p>
-                        <button
-                            onclick="addToCart('${item._id}')"
-                            class="mt-2 bg-gray-700 hover:bg-gray-600 py-2 rounded-lg text-sm text-gray-100"
-                        >
-                            Add to Cart
-                        </button>
-                    </div>
-                `;
-                })
-                .join("");
-
-            if (window.lucide) lucide.createIcons();
-        }
-
-        // --- CART RENDER ---
 
         function renderCart() {
-            const container = document.getElementById("cart-list");
-            if (!container) return;
-
-            if (!userState.cart.length) {
-                container.innerHTML =
-                    '<p class="text-gray-400">Your cart is empty.</p>';
+            const container = document.getElementById('cart-items-container');
+            const totalEl = document.getElementById('cart-total');
+            const titleEl = document.getElementById('cart-count-title');
+            
+            if (cart.length === 0) {
+                container.innerHTML = '<div class="text-center py-10 text-gray-400">Your cart is empty.</div>';
+                totalEl.innerText = '0';
+                titleEl.innerText = '(0 items)';
                 return;
             }
 
-            let totalSelected = 0;
+            const selectedItems = cart.filter(item => item.selected !== false);
+            const total = selectedItems.reduce((sum, item) => sum + (item.price || 0), 0);
 
-            container.innerHTML = userState.cart
-                .map((cartItem, idx) => {
-                    const item = livestockData.find(
-                        (x) => String(x._id) === String(cartItem.livestockId)
-                    );
-                    if (!item) return "";
-
-                    const selected = cartItem.selected !== false;
-                    if (selected) totalSelected += item.price || 0;
-
-                    return `
-                    <div class="bg-gray-800 rounded-xl p-4 flex items-center justify-between gap-4 card-animate">
-                        <div class="flex items-center gap-3">
-                            <input
-                                type="checkbox"
-                                ${selected ? "checked" : ""}
-                                onchange="toggleCartSelection(${idx}, this.checked)"
-                                class="w-4 h-4"
-                            />
-                            <div>
-                                <h4 class="text-sm font-semibold">${item.name || "Livestock"}</h4>
-                                <p class="text-xs text-gray-400">${item.breed || ""}</p>
-                                <p class="text-sm text-emerald-400 mt-1">
-                                    ${formatINR(item.price || 0)}
-                                </p>
-                            </div>
+            container.innerHTML = cart.map((item, index) => {
+                const isSelected = item.selected !== false;
+                return `
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg card-animated">
+                    <div class="flex items-center gap-4">
+                        <input type="checkbox" class="w-4 h-4 mt-1" ${isSelected ? 'checked' : ''} onchange="toggleCartSelection(${index}, this.checked)">
+                        <div class="w-16 h-16 bg-white rounded-lg flex items-center justify-center text-3xl border border-gray-200">${item.image}</div>
+                        <div>
+                            <h4 class="font-bold text-gray-800">${item.name}</h4>
+                            <p class="text-sm text-gray-500">Breed: ${item.breed}</p>
                         </div>
-                        <button
-                            onclick="removeFromCart(${idx})"
-                            class="p-2 rounded-full bg-red-500 text-white hover:bg-red-600"
-                        >
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </div>
+                    <div class="flex items-center gap-6">
+                        <p class="font-bold text-lg w-24 text-right">${formatINR(item.price)}</p>
+                        <button onclick="removeFromCart(${index})" class="text-red-500 hover:bg-red-50 p-2 rounded-full">
+                            <i data-lucide="trash-2" class="w-5 h-5"></i>
                         </button>
                     </div>
-                `;
-                })
-                .join("");
-
-            // Show total selected at bottom of cart section
-            container.insertAdjacentHTML(
-                "beforeend",
-                `
-                <div class="mt-4 flex items-center justify-between">
-                    <span class="text-gray-300 text-sm">Total for selected items:</span>
-                    <span class="text-lg font-semibold text-emerald-400">${formatINR(
-                        totalSelected
-                    )}</span>
                 </div>
-            `
-            );
-
-            if (window.lucide) lucide.createIcons();
+                `;
+            }).join('');
+            
+            totalEl.innerText = formatINR(total);
+            titleEl.innerText = `(${cart.length} items)`;
+            lucide.createIcons();
         }
-
-        // --- ORDERS RENDER ---
 
         function renderOrders() {
-            const container = document.getElementById("orders-list");
+            const container = document.getElementById('orders-list-full');
             if (!container) return;
 
-            if (!orders.length) {
-                container.innerHTML =
-                    '<p class="text-gray-400">You have no orders yet.</p>';
+            if (orders.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500">No past orders.</div>';
+                return;
+            }
+            container.innerHTML = orders.map(o => `
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-100 card-animated">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 bg-white rounded flex items-center justify-center text-2xl">📦</div>
+                        <div>
+                            <p class="font-bold text-gray-800">Order #${String(o._id).slice(-6)}</p>
+                            <p class="text-xs text-gray-500">${o.items.map(i => i.name).join(', ')}</p>
+                            <p class="text-xs text-gray-400">${o.date}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold">${formatINR(o.total)}</p>
+                        <span class="text-xs px-2 py-1 ${getStatusColor(o.status)} rounded-full font-medium">${o.status}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderWishlist() {
+            const grid = document.getElementById('wishlist-grid');
+            const items = livestock.filter(item => wishlist.includes(item._id));
+            
+            if (items.length === 0) {
+                grid.innerHTML = '<div class="col-span-3 text-center text-gray-500">Your wishlist is empty.</div>';
                 return;
             }
 
-            container.innerHTML = orders
-                .map((o) => {
-                    const itemsText = (o.items || [])
-                        .map((it) => it.name)
-                        .join(", ");
-                    return `
-                    <div class="bg-gray-800 rounded-xl p-4 flex flex-col gap-2 card-animate">
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm text-gray-400">Order #${String(
-                                o._id
-                            ).slice(-6)}</span>
-                            <span class="text-xs px-2 py-1 rounded-full ${
-                                o.status === "Delivered"
-                                    ? "bg-emerald-600 text-white"
-                                    : "bg-yellow-500 text-black"
-                            }">
-                                ${o.status || "Processing"}
-                            </span>
-                        </div>
-                        <p class="text-sm text-gray-200">${itemsText}</p>
-                        <p class="text-sm text-gray-400">${o.date || ""}</p>
-                        <p class="text-base font-semibold text-emerald-400">
-                            ${formatINR(o.total || 0)}
-                        </p>
+            grid.innerHTML = items.map(item => `
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm relative card-animated">
+                    <button onclick="toggleWishlist('${item._id}')" class="absolute top-4 right-4 text-red-500 bg-white rounded-full p-1 shadow">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                    <div class="h-40 bg-gray-100 rounded-lg flex items-center justify-center text-6xl mb-4">
+                        ${item.image}
                     </div>
-                `;
-                })
-                .join("");
+                    <h3 class="font-bold text-lg text-gray-800">${item.name}</h3>
+                    <div class="flex items-center justify-between mt-4">
+                        <span class="text-xl font-bold text-green-700">${formatINR(item.price)}</span>
+                        <button onclick="addToCart('${item._id}')" class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800 transition">Add to Cart</button>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
         }
-
-        // --- ADDRESSES RENDER ---
 
         function renderAddresses() {
-            const container = document.getElementById("addresses-list");
+            const container = document.getElementById('addresses-container');
             if (!container) return;
 
-            if (!userState.addresses.length) {
-                container.innerHTML =
-                    '<p class="text-gray-400">No saved addresses yet.</p>';
-                return;
-            }
-
-            container.innerHTML = userState.addresses
-                .map((addr, idx) => {
-                    return `
-                    <div class="bg-gray-800 rounded-xl p-4 flex flex-col gap-2 card-animate">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-xs text-gray-400">Name</p>
-                                <p class="text-sm font-semibold text-gray-100">${
-                                    addr.name || ""
-                                }</p>
-                            </div>
-                            <button
-                                class="px-3 py-1 rounded-lg bg-gray-700 text-gray-100 text-xs"
-                                onclick="editAddress(${idx})"
-                            >
-                                Change
-                            </button>
-                        </div>
-
-                        <p class="text-xs text-gray-400 mt-2">Phone</p>
-                        <p class="text-sm text-gray-100">${
-                            addr.phone ? "+91 " + addr.phone : ""
-                        }</p>
-
-                        <p class="text-xs text-gray-400 mt-2">Address</p>
-                        <p class="text-sm text-gray-100">
-                            ${addr.line1 || ""}, ${addr.city || ""}, ${addr.state || ""}
-                        </p>
-
-                        <p class="text-xs text-gray-400 mt-2">Pincode</p>
-                        <p class="text-sm text-gray-100">${addr.pincode || ""}</p>
+            if (!currentAddress) {
+                container.innerHTML = `
+                    <div class="text-sm text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-lg p-4">
+                        No saved addresses yet. An address will be saved here when you buy a product.
                     </div>
                 `;
-                })
-                .join("");
-        }
-
-        // --- WISHLIST / CART ACTIONS ---
-
-        function toggleWishlist(id) {
-            const strId = String(id);
-            const idx = userState.wishlist.indexOf(strId);
-            if (idx === -1) userState.wishlist.push(strId);
-            else userState.wishlist.splice(idx, 1);
-
-            saveUserStateToDB();
-            updateHomeStats();
-            renderBrowse();
-            renderWishlist();
-            showToast("Wishlist updated.", "success");
-        }
-
-        function addToCart(id) {
-            const strId = String(id);
-            const exists = userState.cart.some(
-                (c) => String(c.livestockId) === strId
-            );
-            if (exists) {
-                showToast("Item is already in cart.", "warning");
                 return;
             }
-            userState.cart.push({
-                livestockId: strId,
-                selected: true
-            });
-            saveUserStateToDB();
-            updateHomeStats();
-            renderCart();
-            showToast("Added to cart.", "success");
+
+            const a = currentAddress;
+            container.innerHTML = `
+                <div class="border rounded-lg p-4 bg-gray-50 card-animated">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Full Name</p>
+                            <p class="font-semibold text-gray-800">${a.name}</p>
+                            <p class="text-xs font-semibold text-gray-500 mt-2">Phone</p>
+                            <p class="text-xs text-gray-700">+91 ${a.phone}</p>
+                        </div>
+                        <div class="flex flex-col items-end gap-2">
+                            <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Saved</span>
+                            <button onclick="openAddressModal()" class="mt-1 px-3 py-1.5 text-xs rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-100">
+                                Change Address
+                            </button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Address</p>
+                            <p class="text-gray-700">${a.line}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">City &amp; State</p>
+                            <p class="text-gray-700">${a.city}, ${a.state}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Pincode</p>
+                            <p class="text-gray-700">${a.pincode}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
 
-        function removeFromCart(index) {
-            userState.cart.splice(index, 1);
-            saveUserStateToDB();
-            updateHomeStats();
-            renderCart();
-            showToast("Removed from cart.", "info");
-        }
+        // --- CART / WISHLIST / CHECKOUT ACTIONS ---
 
-        function toggleCartSelection(index, checked) {
-            if (!userState.cart[index]) return;
-            userState.cart[index].selected = !!checked;
-            saveUserStateToDB();
-            renderCart();
+        function addToCart(id) {
+            const item = livestock.find(i => i._id === id);
+            if (item) {
+                const cartItem = { ...item, selected: true };
+                cart.push(cartItem);
+                updateCartBadge();
+                saveUserState();
+                showToast(`${item.name} added to cart`, 'success');
+                const active = document.querySelector('.nav-item.bg-green-600')?.getAttribute('onclick') || '';
+                if (active.includes('dashboard')) renderDashboard();
+            }
         }
 
         function buyNow(id) {
-            const strId = String(id);
-            const item = livestockData.find((x) => String(x._id) === strId);
-            if (!item) {
-                showToast("Item not found.", "error");
-                return;
-            }
-            pendingCheckoutItems = [
-                {
-                    livestockId: strId
-                }
-            ];
-            if (!userState.addresses.length) {
-                openAddressModal();
+            const item = livestock.find(i => i._id === id);
+            if (!item) return;
+            const buyItem = { ...item, selected: true };
+
+            if (!currentAddress) {
+                openAddressModal([buyItem]);
             } else {
-                proceedOrderWithAddress(userState.addresses[0]);
+                createOrder([buyItem]);
             }
         }
 
-        // --- CHECKOUT / ORDERS ---
+        function removeFromCart(index) {
+            cart.splice(index, 1);
+            renderCart();
+            updateCartBadge();
+            saveUserState();
+        }
 
-        function proceedToCheckout() {
-            const selectedItems = userState.cart.filter((c) => c.selected !== false);
-            if (!selectedItems.length) {
-                showToast("Select at least one item in cart.", "warning");
-                return;
-            }
-            pendingCheckoutItems = selectedItems.slice();
-            if (!userState.addresses.length) {
-                openAddressModal();
+        function toggleCartSelection(index, checked) {
+            if (!cart[index]) return;
+            cart[index].selected = checked;
+            saveUserState();
+            renderCart();
+        }
+
+        function toggleWishlist(id) {
+            const index = wishlist.indexOf(id);
+            if (index === -1) {
+                wishlist.push(id);
+                showToast('Added to wishlist', 'success');
             } else {
-                proceedOrderWithAddress(userState.addresses[0]);
+                wishlist.splice(index, 1);
+                showToast('Removed from wishlist', 'info');
             }
+            saveUserState();
+            const active = document.querySelector('.nav-item.bg-green-600')?.getAttribute('onclick') || '';
+            if (active.includes('wishlist')) renderWishlist();
+            if (active.includes('browse')) renderBrowse();
+            if (active.includes('dashboard')) renderDashboard();
         }
 
-        function proceedOrderWithAddress(address) {
-            if (!pendingCheckoutItems || !pendingCheckoutItems.length) {
-                showToast("No items selected.", "warning");
-                return;
-            }
-
-            const itemsPayload = pendingCheckoutItems
-                .map((c) => {
-                    const item = livestockData.find(
-                        (x) => String(x._id) === String(c.livestockId)
-                    );
-                    if (!item) return null;
-                    return {
-                        id: String(item._id),
-                        name: item.name,
-                        price: item.price,
-                        breed: item.breed
-                    };
-                })
-                .filter(Boolean);
-
-            if (!itemsPayload.length) {
-                showToast("Selected items are invalid.", "error");
-                return;
-            }
-
-            const total = itemsPayload.reduce(
-                (sum, it) => sum + (it.price || 0),
-                0
-            );
-
-            const payload = {
-                date: new Date().toLocaleDateString("en-IN"),
-                items: itemsPayload,
-                total,
-                status: "Processing",
-                address
-            };
-
-            api("/orders", {
-                method: "POST",
-                body: payload
-            })
-                .then(async () => {
-                    // remove purchased from cart
-                    const idsBought = new Set(
-                        pendingCheckoutItems.map((c) => String(c.livestockId))
-                    );
-                    userState.cart = userState.cart.filter(
-                        (c) => !idsBought.has(String(c.livestockId))
-                    );
-                    pendingCheckoutItems = null;
-                    await saveUserStateToDB();
-                    await loadOrders();
-                    updateHomeStats();
-                    renderCart();
-                    renderOrders();
-                    switchView("orders");
-                    showToast("Order placed successfully!", "success");
-                })
-                .catch((err) => {
-                    console.error(err);
-                    showToast("Failed to place order.", "error");
-                });
-        }
-
-        // --- ADDRESS MODAL / ACTIONS ---
-
-        function openAddressModal() {
-            const modal = document.getElementById("address-modal");
+        function openAddressModal(itemsToBuy) {
+            pendingCheckoutItems = itemsToBuy || null;
+            const modal = document.getElementById('address-modal');
             if (!modal) return;
-
-            // If there's at least one address, load the first one for editing
-            if (userState.addresses.length) {
-                const addr = userState.addresses[0];
-                document.getElementById("addr-name").value = addr.name || "";
-                document.getElementById("addr-phone").value = addr.phone || "";
-                document.getElementById("addr-line1").value = addr.line1 || "";
-                document.getElementById("addr-city").value = addr.city || "";
-                document.getElementById("addr-state").value = addr.state || "";
-                document.getElementById("addr-pincode").value = addr.pincode || "";
+            const hasAddress = !!currentAddress;
+            if (hasAddress) {
+                document.getElementById('addr-name').value = currentAddress.name || '';
+                document.getElementById('addr-phone').value = currentAddress.phone || '';
+                document.getElementById('addr-line').value = currentAddress.line || '';
+                document.getElementById('addr-city').value = currentAddress.city || '';
+                document.getElementById('addr-state').value = currentAddress.state || '';
+                document.getElementById('addr-pincode').value = currentAddress.pincode || '';
             } else {
-                document.getElementById("address-form").reset();
+                document.getElementById('address-form').reset();
             }
-
-            modal.classList.remove("hidden");
-            modal.classList.add("flex");
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
         }
 
         function closeAddressModal() {
-            const modal = document.getElementById("address-modal");
+            const modal = document.getElementById('address-modal');
             if (!modal) return;
-            modal.classList.add("hidden");
-            modal.classList.remove("flex");
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            pendingCheckoutItems = null;
         }
 
-        function editAddress(index) {
-            // For simplicity, we only support editing the first address as default
-            if (!userState.addresses[index]) return;
-            openAddressModal();
-        }
-
-        function saveAddress(event) {
+        async function submitAddress(event) {
             event.preventDefault();
+            const name = document.getElementById('addr-name').value.trim();
+            const phone = document.getElementById('addr-phone').value.trim();
+            const line = document.getElementById('addr-line').value.trim();
+            const city = document.getElementById('addr-city').value.trim();
+            const state = document.getElementById('addr-state').value.trim();
+            const pincode = document.getElementById('addr-pincode').value.trim();
 
-            const name = document.getElementById("addr-name").value.trim();
-            const phone = document.getElementById("addr-phone").value.trim();
-            const line1 = document.getElementById("addr-line1").value.trim();
-            const city = document.getElementById("addr-city").value.trim();
-            const state = document.getElementById("addr-state").value.trim();
-            const pincode = document.getElementById("addr-pincode").value.trim();
-
-            if (!name || !phone || !line1 || !city || !state || !pincode) {
-                showToast("Please fill in all address fields.", "warning");
+            if (!name || !phone || !line || !city || !state || !pincode) {
+                showToast('Please fill all address fields.', 'warning');
                 return;
             }
-
             if (!/^[0-9]{10}$/.test(phone)) {
-                showToast("Phone must be 10 digits.", "warning");
+                showToast('Phone number must be 10 digits.', 'warning');
                 return;
             }
             if (!/^[0-9]{6}$/.test(pincode)) {
-                showToast("Pincode must be 6 digits.", "warning");
+                showToast('Pincode must be 6 digits.', 'warning');
                 return;
             }
 
-            const newAddr = {
-                name,
-                phone,
-                line1,
-                city,
-                state,
-                pincode
-            };
-
-            if (!userState.addresses.length) {
-                userState.addresses.push(newAddr);
-            } else {
-                // Overwrite the first address as the primary
-                userState.addresses[0] = newAddr;
-            }
-
-            saveUserStateToDB();
+            currentAddress = { name, phone, line, city, state, pincode };
+            saveUserState();
             renderAddresses();
             closeAddressModal();
-            showToast("Address saved.", "success");
+            showToast('Address saved', 'success');
 
-            // If there was a pending checkout, proceed now
-            if (pendingCheckoutItems && pendingCheckoutItems.length) {
-                proceedOrderWithAddress(newAddr);
+            if (pendingCheckoutItems && pendingCheckoutItems.length > 0) {
+                await createOrder(pendingCheckoutItems);
+                pendingCheckoutItems = null;
             }
         }
 
-        // --- DOM READY ---
+        async function checkout() {
+            if (cart.length === 0) {
+                showToast('Your cart is empty.', 'warning');
+                return;
+            }
+            const itemsToBuy = cart.filter(item => item.selected !== false);
+            if (itemsToBuy.length === 0) {
+                showToast('Please select at least one item to checkout.', 'warning');
+                return;
+            }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            // Attach form handlers
-            const loginForm = document.getElementById("login-form");
-            const regForm = document.getElementById("register-form");
-            const addrForm = document.getElementById("address-form");
+            if (!currentAddress) {
+                openAddressModal(itemsToBuy);
+                return;
+            }
 
-            if (loginForm) loginForm.addEventListener("submit", handleLogin);
-            if (regForm) regForm.addEventListener("submit", handleRegister);
-            if (addrForm) addrForm.addEventListener("submit", saveAddress);
+            await createOrder(itemsToBuy);
+        }
 
-            if (window.lucide) lucide.createIcons();
+        async function createOrder(itemsToBuy) {
+            const total = itemsToBuy.reduce((sum, item) => sum + (item.price || 0), 0);
+            const customerName = currentUser?.name || 'Guest User';
 
+            const newOrder = {
+                date: new Date().toLocaleDateString(),
+                items: itemsToBuy.map(c => ({ id: c._id, name: c.name, price: c.price, breed: c.breed })),
+                total: total,
+                status: "Processing",
+                customer: customerName,
+                address: currentAddress
+            };
+
+            try {
+                await fetch(`${API_URL}/orders`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(newOrder)
+                });
+
+                // Remove only purchased items from cart
+                cart = cart.filter(item => item.selected === false);
+                updateCartBadge();
+                saveUserState();
+                router('orders');
+                showToast('Order placed successfully!', 'success');
+            } catch (e) {
+                console.error(e);
+                showToast('Error placing order.', 'error');
+            }
+        }
+
+        function updateCartBadge() {
+            const badges = [document.getElementById('cart-badge'), document.getElementById('header-cart-badge')];
+            badges.forEach(b => {
+                if (!b) return;
+                b.innerText = cart.length;
+                if (cart.length > 0) b.classList.remove('hidden');
+                else b.classList.add('hidden');
+            });
+        }
+
+        function getStatusColor(status) {
+            if (status === 'Shipped') return 'bg-blue-100 text-blue-700';
+            if (status === 'Delivered') return 'bg-gray-800 text-white';
+            if (status === 'Processing') return 'bg-yellow-100 text-yellow-800';
+            return 'bg-gray-100 text-gray-800';
+        }
+
+        // --- INIT APP ---
+
+        function initApp() {
+            if (appInitialized) return;
+            appInitialized = true;
+
+            updateCartBadge();
+            const dateOptions = { weekday: 'long', year: 'numeric', month: 'short', day: 'numeric' };
+            const dateEl = document.getElementById('current-date');
+            if (dateEl) {
+                dateEl.innerText = new Date().toLocaleDateString('en-IN', dateOptions);
+            }
+            router('dashboard');
+        }
+
+        function attachEventListeners() {
+            const loginForm = document.getElementById('login-form');
+            const registerForm = document.getElementById('register-form');
+
+            if (loginForm) loginForm.addEventListener('submit', handleLogin);
+            if (registerForm) registerForm.addEventListener('submit', handleRegister);
+
+            document.addEventListener('click', (e) => {
+                const menu = document.getElementById('profile-menu');
+                const btn = document.getElementById('profile-button');
+                if (!menu || !btn) return;
+                if (!menu.contains(e.target) && !btn.contains(e.target)) {
+                    menu.classList.add('hidden');
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            attachEventListeners();
             checkAuth();
+            lucide.createIcons();
         });
     </script>
 </body>
