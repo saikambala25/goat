@@ -316,15 +316,13 @@
                 <div id="view-dashboard" class="space-y-6">
                     <!-- Stats Cards -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <!-- 1: Total Livestock -->
                         <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
                             <div>
-                                <p class="text-sm text-gray-500 mb-1">Total Livestock</p>
-                                <h3 class="text-2xl font-bold text-gray-800" id="dash-total-livestock">0</h3>
+                                <p class="text-sm text-gray-500 mb-1">Total Spent</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="dash-total-spent">0</h3>
                             </div>
-                            <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xl">🐐</div>
+                            <div class="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center text-xl">💰</div>
                         </div>
-                        <!-- 2: My Orders -->
                         <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
                             <div>
                                 <p class="text-sm text-gray-500 mb-1">My Orders</p>
@@ -332,7 +330,6 @@
                             </div>
                             <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xl">📦</div>
                         </div>
-                        <!-- 3: Wishlist -->
                         <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
                             <div>
                                 <p class="text-sm text-gray-500 mb-1">Wishlist</p>
@@ -340,13 +337,13 @@
                             </div>
                             <div class="w-12 h-12 bg-pink-100 text-pink-600 rounded-full flex items-center justify-center text-xl">❤️</div>
                         </div>
-                        <!-- 4: Total Spent -->
+                        <!-- Replaced coupons with total livestock count -->
                         <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
                             <div>
-                                <p class="text-sm text-gray-500 mb-1">Total Spent</p>
-                                <h3 class="text-2xl font-bold text-gray-800" id="dash-total-spent">0</h3>
+                                <p class="text-sm text-gray-500 mb-1">Total Livestock</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="dash-total-livestock">0</h3>
                             </div>
-                            <div class="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center text-xl">💰</div>
+                            <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xl">🐐</div>
                         </div>
                     </div>
 
@@ -755,11 +752,8 @@
                 const lsRes = await fetch(`${API_URL}/livestock`);
                 livestock = await lsRes.json();
 
-                // Orders: per-user via backend filter
-                let ordRes = await fetch(`${API_URL}/orders`, {
-                    credentials: 'include'
-                });
-                orders = ordRes.ok ? await ordRes.json() : [];
+                const ordRes = await fetch(`${API_URL}/orders`);
+                orders = await ordRes.json();
 
                 const activeNav = document.querySelector('.nav-item.bg-green-600');
                 let currentView = 'dashboard';
@@ -898,14 +892,7 @@
                     </div>
                     <div class="flex items-center justify-between mt-4">
                         <span class="text-xl font-bold text-green-700">${formatINR(item.price)}</span>
-                        <div class="flex gap-2">
-                            <button onclick="addToCart('${item._id}')" class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800 transition">
-                                Add to Cart
-                            </button>
-                            <button onclick="buyNow('${item._id}')" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-emerald-700 transition">
-                                Buy Now
-                            </button>
-                        </div>
+                        <button onclick="addToCart('${item._id}')" class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800 transition">Add to Cart</button>
                     </div>
                 </div>
             `}).join('');
@@ -1001,14 +988,7 @@
                     <h3 class="font-bold text-lg text-gray-800">${item.name}</h3>
                     <div class="flex items-center justify-between mt-4">
                         <span class="text-xl font-bold text-green-700">${formatINR(item.price)}</span>
-                        <div class="flex gap-2">
-                            <button onclick="addToCart('${item._id}')" class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm">
-                                Add to Cart
-                            </button>
-                            <button onclick="buyNow('${item._id}')" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-emerald-700">
-                                Buy Now
-                            </button>
-                        </div>
+                        <button onclick="addToCart('${item._id}')" class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm">Add to Cart</button>
                     </div>
                 </div>
             `).join('');
@@ -1018,9 +998,6 @@
         function renderAddresses() {
             const container = document.getElementById('addresses-container');
             if (!container) return;
-
-            const titleEl = document.getElementById('page-title');
-            if (titleEl) titleEl.innerText = 'Addresses';
 
             if (!currentAddress) {
                 container.innerHTML = `
@@ -1036,23 +1013,13 @@
                 <div class="border rounded-lg p-4 bg-gray-50">
                     <div class="flex justify-between items-start mb-2">
                         <div>
-                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Default Address</p>
-                            <p class="font-semibold text-gray-800 mt-1">${a.name}</p>
-                            <p class="text-xs text-gray-500">Phone: +91 ${a.phone}</p>
+                            <p class="font-semibold text-gray-800">${a.name}</p>
+                            <p class="text-xs text-gray-500">+91 ${a.phone}</p>
                         </div>
-                        <div class="flex flex-col items-end gap-2">
-                            <button onclick="openAddressModal()" class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full hover:bg-blue-200">
-                                Change
-                            </button>
-                            <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Saved</span>
-                        </div>
+                        <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Saved</span>
                     </div>
-                    <div class="mt-2 space-y-1 text-sm text-gray-700">
-                        <p><span class="font-semibold">Address:</span> ${a.line}</p>
-                        <p><span class="font-semibold">City:</span> ${a.city}</p>
-                        <p><span class="font-semibold">State:</span> ${a.state}</p>
-                        <p><span class="font-semibold">Pincode:</span> ${a.pincode}</p>
-                    </div>
+                    <p class="text-sm text-gray-700">${a.line}</p>
+                    <p class="text-sm text-gray-700 mt-1">${a.city}, ${a.state} - ${a.pincode}</p>
                 </div>
             `;
         }
@@ -1070,18 +1037,6 @@
                 const active = document.querySelector('.nav-item.bg-green-600')?.getAttribute('onclick') || '';
                 if (active.includes('dashboard')) renderDashboard();
             }
-        }
-
-        function buyNow(id) {
-            const item = livestock.find(i => i._id === id);
-            if (!item) return;
-
-            if (!currentAddress) {
-                openAddressModal([item]);
-                return;
-            }
-
-            createOrder([item]);
         }
 
         function removeFromCart(index) {
@@ -1211,7 +1166,6 @@
                 await fetch(`${API_URL}/orders`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
                     body: JSON.stringify(newOrder)
                 });
 
