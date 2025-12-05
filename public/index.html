@@ -675,26 +675,25 @@
         }
 
         async function handleLogout() {
-            try:
-                await fetch(`${API_URL}/auth/logout`, {
-                    method: 'POST',
-                    credentials: 'include'
-                });
-            } catch (err) {
-                console.error('Logout error', err);
-            }
+    try {
+        await fetch(`${API_URL}/auth/logout`, {
+            method: 'POST',
+            credentials: 'include'
+        });
+    } catch (err) {
+        console.error('Logout error', err);
+    }
 
-            currentUser = null;
-            cart = [];
-            wishlist = [];
-            addresses = [];
-            updateCartBadge();
+    currentUser = null;
+    cart = [];
+    wishlist = [];
+    addresses = [];
+    updateCartBadge();
 
-            toggleProfileMenu(false);
-            showToast('Logged out', 'info');
-            showAuthScreen();
-        }
-
+    toggleProfileMenu(false);
+    showToast('Logged out', 'info');
+    showAuthScreen();
+}
         async function checkAuth() {
             try {
                 const res = await fetch(`${API_URL}/auth/me`, {
