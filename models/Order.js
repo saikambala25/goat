@@ -1,12 +1,9 @@
+// models/Order.js
 const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema({
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: false, // for old orders without user
-    },
     customer: { type: String, required: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     date: { type: String, required: true }, // Keeping string for simplicity matching frontend
     items: [{
         id: String,
@@ -16,6 +13,14 @@ const orderSchema = new mongoose.Schema({
     }],
     total: { type: Number, required: true },
     status: { type: String, default: 'Processing' }, // Processing, Shipped, Delivered
+    address: {
+        name: String,
+        phone: String,
+        line: String,
+        city: String,
+        state: String,
+        pincode: String
+    },
     createdAt: { type: Date, default: Date.now }
 });
 
