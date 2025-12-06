@@ -4,8 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LivestockMart - User App</title>
+    <!-- Using Tailwind from CDN for development - in production, use npm build -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Using specific version of Lucide to avoid tracking issues -->
+    <script src="https://unpkg.com/lucide@0.263.1/dist/umd/lucide.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -37,6 +39,14 @@
         .auth-card.show-register .auth-panel-register {
             transform: translateX(0);
             opacity: 1;
+        }
+
+        .payment-option {
+            transition: all 0.3s ease;
+        }
+        .payment-option.selected {
+            border-color: #10b981;
+            background-color: #f0fdf4;
         }
     </style>
 </head>
@@ -95,6 +105,150 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Order Summary Modal -->
+    <div id="order-summary-modal" class="fixed inset-0 z-30 hidden items-center justify-center bg-black/60">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-2xl text-gray-800 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-xl font-semibold">Order Summary</h3>
+                <button onclick="closeOrderSummary()" class="text-gray-400 hover:text-gray-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- Order Items -->
+            <div class="mb-6">
+                <h4 class="font-semibold mb-3">Order Items</h4>
+                <div id="order-items" class="space-y-3"></div>
+            </div>
+
+            <!-- Shipping Address -->
+            <div class="mb-6">
+                <h4 class="font-semibold mb-3">Shipping Address</h4>
+                <div id="order-address" class="bg-gray-50 p-4 rounded-lg"></div>
+                <button onclick="changeAddress()" class="mt-2 text-sm text-blue-600 hover:text-blue-700">Change Address</button>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="mb-6">
+                <h4 class="font-semibold mb-3">Payment Method</h4>
+                <div class="space-y-3">
+                    <div class="payment-option border-2 border-gray-200 rounded-lg p-4 cursor-pointer" onclick="selectPayment('cod')">
+                        <div class="flex items-center">
+                            <input type="radio" name="payment" value="cod" class="mr-3">
+                            <div>
+                                <p class="font-medium">Cash on Delivery</p>
+                                <p class="text-sm text-gray-500">Pay when you receive your order</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="payment-option border-2 border-gray-200 rounded-lg p-4 cursor-pointer" onclick="selectPayment('upi')">
+                        <div class="flex items-center">
+                            <input type="radio" name="payment" value="upi" class="mr-3">
+                            <div>
+                                <p class="font-medium">UPI Payment</p>
+                                <p class="text-sm text-gray-500">Pay instantly using UPI</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="payment-option border-2 border-gray-200 rounded-lg p-4 cursor-pointer" onclick="selectPayment('card')">
+                        <div class="flex items-center">
+                            <input type="radio" name="payment" value="card" class="mr-3">
+                            <div>
+                                <p class="font-medium">Credit/Debit Card</p>
+                                <p class="text-sm text-gray-500">Pay using your card</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Price Details -->
+            <div class="mb-6">
+                <h4 class="font-semibold mb-3">Price Details</h4>
+                <div class="bg-gray-50 p-4 rounded-lg space-y-2">
+                    <div class="flex justify-between">
+                        <span>Subtotal</span>
+                        <span id="order-subtotal">₹0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Delivery Charges</span>
+                        <span id="order-delivery">₹0</span>
+                    </div>
+                    <div class="flex justify-between font-semibold text-lg pt-2 border-t">
+                        <span>Total</span>
+                        <span id="order-total">₹0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex gap-3">
+                <button onclick="closeOrderSummary()" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    Cancel
+                </button>
+                <button onclick="confirmOrder()" class="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium">
+                    Place Order
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div id="payment-modal" class="fixed inset-0 z-30 hidden items-center justify-center bg-black/60">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md text-gray-800 shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold" id="payment-modal-title">Complete Payment</h3>
+                <button onclick="closePaymentModal()" class="text-gray-400 hover:text-gray-600">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <!-- UPI Payment Form -->
+            <div id="upi-form" class="hidden space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Enter UPI ID</label>
+                    <input type="text" placeholder="yourname@upi" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2">
+                </div>
+                <button onclick="processUPIPayment()" class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700">
+                    Pay Now
+                </button>
+            </div>
+
+            <!-- Card Payment Form -->
+            <div id="card-form" class="hidden space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Card Number</label>
+                    <input type="text" placeholder="1234 5678 9012 3456" maxlength="19" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Expiry</label>
+                        <input type="text" placeholder="MM/YY" maxlength="5" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">CVV</label>
+                        <input type="text" placeholder="123" maxlength="3" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2">
+                    </div>
+                </div>
+                <button onclick="processCardPayment()" class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700">
+                    Pay Now
+                </button>
+            </div>
+
+            <!-- Payment Success -->
+            <div id="payment-success" class="hidden text-center py-8">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="check" class="w-8 h-8 text-green-600"></i>
+                </div>
+                <h3 class="text-lg font-semibold mb-2">Payment Successful!</h3>
+                <p class="text-gray-600 mb-4">Your order has been placed successfully</p>
+                <button onclick="goToOrders()" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
+                    View Orders
+                </button>
+            </div>
         </div>
     </div>
 
@@ -318,6 +472,13 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                         <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
                             <div>
+                                <p class="text-sm text-gray-500 mb-1">Total Livestock</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="dash-total-livestock">0</h3>
+                            </div>
+                            <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xl">🐐</div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
+                            <div>
                                 <p class="text-sm text-gray-500 mb-1">My Orders</p>
                                 <h3 class="text-2xl font-bold text-gray-800" id="dash-total-orders">0</h3>
                             </div>
@@ -336,13 +497,6 @@
                                 <h3 class="text-2xl font-bold text-gray-800" id="dash-total-cart">0</h3>
                             </div>
                             <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-xl">🛒</div>
-                        </div>
-                        <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
-                            <div>
-                                <p class="text-sm text-gray-500 mb-1">Total Livestock</p>
-                                <h3 class="text-2xl font-bold text-gray-800" id="dash-total-livestock">0</h3>
-                            </div>
-                            <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xl">🐐</div>
                         </div>
                     </div>
 
@@ -476,6 +630,8 @@
         let currentAddress = null;
         let pendingCheckoutItems = null;
         let editingAddressIndex = -1;
+        let selectedPaymentMethod = null;
+        let currentOrderItems = [];
 
         // --- Toast popup ---
         function showToast(message, type = 'info') {
@@ -789,7 +945,7 @@
                 const lsRes = await fetch(`${API_URL}/livestock`);
                 livestock = await lsRes.json();
 
-                // Only load orders for the current user
+                // Only load orders for current user
                 const ordRes = await fetch(`${API_URL}/orders`, {
                     method: 'GET',
                     credentials: 'include'
@@ -1008,6 +1164,11 @@
                     <div class="text-right">
                         <p class="font-bold">${formatINR(o.total)}</p>
                         <span class="text-xs px-2 py-1 ${getStatusColor(o.status)} rounded-full font-medium">${o.status}</span>
+                        ${o.status === 'Processing' ? `
+                            <button onclick="cancelOrder('${o._id}')" class="mt-2 text-xs text-red-600 hover:text-red-700">
+                                Cancel Order
+                            </button>
+                        ` : ''}
                     </div>
                 </div>
             `).join('');
@@ -1126,14 +1287,255 @@
         function buyNow(id) {
             const item = livestock.find(i => i._id === id);
             if (item) {
-                // Add to cart and proceed to checkout
-                const cartItem = { ...item, selected: true };
-                cart = [cartItem]; // Replace cart with just this item
-                updateCartBadge();
-                saveUserState();
-                showToast(`${item.name} added to cart`, 'success');
-                router('cart');
-                setTimeout(() => checkout(), 500);
+                currentOrderItems = [{ ...item, selected: true }];
+                showOrderSummary();
+            }
+        }
+
+        function showOrderSummary() {
+            if (currentOrderItems.length === 0) {
+                showToast('No items in order', 'error');
+                return;
+            }
+
+            // Check if user has addresses
+            if (addresses.length === 0) {
+                pendingCheckoutItems = currentOrderItems;
+                openAddressModal();
+                return;
+            }
+
+            // Set current address if not set
+            if (!currentAddress && addresses.length > 0) {
+                currentAddress = addresses[0];
+            }
+
+            const modal = document.getElementById('order-summary-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            // Render order items
+            const itemsContainer = document.getElementById('order-items');
+            const subtotal = currentOrderItems.reduce((sum, item) => sum + (item.price || 0), 0);
+            const delivery = subtotal > 5000 ? 0 : 200;
+            const total = subtotal + delivery;
+
+            itemsContainer.innerHTML = currentOrderItems.map(item => `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-white rounded flex items-center justify-center text-2xl border border-gray-200">${item.image}</div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800">${item.name}</h4>
+                            <p class="text-sm text-gray-500">${item.breed}</p>
+                        </div>
+                    </div>
+                    <p class="font-bold">${formatINR(item.price)}</p>
+                </div>
+            `).join('');
+
+            // Render address
+            const addressContainer = document.getElementById('order-address');
+            if (currentAddress) {
+                addressContainer.innerHTML = `
+                    <p class="font-semibold">${currentAddress.name}</p>
+                    <p class="text-sm text-gray-600">${currentAddress.line1 || currentAddress.line}</p>
+                    ${currentAddress.line2 ? `<p class="text-sm text-gray-600">${currentAddress.line2}</p>` : ''}
+                    <p class="text-sm text-gray-600">${currentAddress.city}, ${currentAddress.state} - ${currentAddress.pincode}</p>
+                    <p class="text-sm text-gray-600">📱 +91 ${currentAddress.phone}</p>
+                `;
+            }
+
+            // Update price details
+            document.getElementById('order-subtotal').textContent = formatINR(subtotal);
+            document.getElementById('order-delivery').textContent = delivery === 0 ? 'FREE' : formatINR(delivery);
+            document.getElementById('order-total').textContent = formatINR(total);
+
+            // Reset payment selection
+            selectedPaymentMethod = null;
+            document.querySelectorAll('.payment-option').forEach(opt => {
+                opt.classList.remove('selected');
+                opt.querySelector('input[type="radio"]').checked = false;
+            });
+
+            lucide.createIcons();
+        }
+
+        function closeOrderSummary() {
+            const modal = document.getElementById('order-summary-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            currentOrderItems = [];
+        }
+
+        function changeAddress() {
+            closeOrderSummary();
+            pendingCheckoutItems = currentOrderItems;
+            openAddressModal();
+        }
+
+        function selectPayment(method) {
+            selectedPaymentMethod = method;
+            document.querySelectorAll('.payment-option').forEach(opt => {
+                opt.classList.remove('selected');
+                opt.querySelector('input[type="radio"]').checked = false;
+            });
+            
+            const selectedOption = document.querySelector(`.payment-option:has(input[value="${method}"])`);
+            if (selectedOption) {
+                selectedOption.classList.add('selected');
+                selectedOption.querySelector('input[type="radio"]').checked = true;
+            }
+        }
+
+        async function confirmOrder() {
+            if (!selectedPaymentMethod) {
+                showToast('Please select a payment method', 'warning');
+                return;
+            }
+
+            if (!currentAddress) {
+                showToast('Please select a delivery address', 'warning');
+                return;
+            }
+
+            if (selectedPaymentMethod === 'cod') {
+                // For COD, create order directly
+                await createOrder();
+            } else {
+                // For other payment methods, show payment modal
+                closeOrderSummary();
+                showPaymentModal(selectedPaymentMethod);
+            }
+        }
+
+        function showPaymentModal(method) {
+            const modal = document.getElementById('payment-modal');
+            const title = document.getElementById('payment-modal-title');
+            
+            // Hide all forms initially
+            document.getElementById('upi-form').classList.add('hidden');
+            document.getElementById('card-form').classList.add('hidden');
+            document.getElementById('payment-success').classList.add('hidden');
+
+            if (method === 'upi') {
+                title.innerText = 'UPI Payment';
+                document.getElementById('upi-form').classList.remove('hidden');
+            } else if (method === 'card') {
+                title.innerText = 'Card Payment';
+                document.getElementById('card-form').classList.remove('hidden');
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons();
+        }
+
+        function closePaymentModal() {
+            const modal = document.getElementById('payment-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function processUPIPayment() {
+            // Simulate UPI payment processing
+            showToast('Processing UPI payment...', 'info');
+            setTimeout(() => {
+                document.getElementById('upi-form').classList.add('hidden');
+                document.getElementById('payment-success').classList.remove('hidden');
+                createOrder();
+            }, 2000);
+        }
+
+        function processCardPayment() {
+            // Simulate card payment processing
+            showToast('Processing card payment...', 'info');
+            setTimeout(() => {
+                document.getElementById('card-form').classList.add('hidden');
+                document.getElementById('payment-success').classList.remove('hidden');
+                createOrder();
+            }, 2000);
+        }
+
+        function goToOrders() {
+            closePaymentModal();
+            router('orders');
+        }
+
+        async function createOrder() {
+            const subtotal = currentOrderItems.reduce((sum, item) => sum + (item.price || 0), 0);
+            const delivery = subtotal > 5000 ? 0 : 200;
+            const total = subtotal + delivery;
+            const customerName = currentUser?.name || 'Guest User';
+
+            const newOrder = {
+                date: new Date().toLocaleDateString(),
+                items: currentOrderItems.map(c => ({ id: c._id, name: c.name, price: c.price, breed: c.breed })),
+                total: total,
+                status: "Processing",
+                customer: customerName,
+                address: currentAddress,
+                paymentMethod: selectedPaymentMethod || 'cod'
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/orders`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(newOrder)
+                });
+
+                if (response.ok) {
+                    // Clear items from cart if they were in cart
+                    if (cart.length > 0) {
+                        cart = cart.filter(item => item.selected === false);
+                        updateCartBadge();
+                        saveUserState();
+                    }
+
+                    currentOrderItems = [];
+                    showToast('Order placed successfully!', 'success');
+                    
+                    // Show success message in payment modal if it's open
+                    if (!document.getElementById('payment-modal').classList.contains('hidden')) {
+                        document.getElementById('upi-form').classList.add('hidden');
+                        document.getElementById('card-form').classList.add('hidden');
+                        document.getElementById('payment-success').classList.remove('hidden');
+                    } else {
+                        router('orders');
+                    }
+                } else {
+                    showToast('Failed to place order', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('Error placing order.', 'error');
+            }
+        }
+
+        async function cancelOrder(orderId) {
+            if (!confirm('Are you sure you want to cancel this order?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/orders/${orderId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ status: 'Cancelled' })
+                });
+
+                if (response.ok) {
+                    showToast('Order cancelled successfully', 'success');
+                    loadData();
+                    renderOrders();
+                } else {
+                    showToast('Failed to cancel order', 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('Error cancelling order', 'error');
             }
         }
 
@@ -1227,9 +1629,11 @@
             renderAddresses();
             closeAddressModal();
 
+            // If we were in the middle of checkout, show order summary
             if (pendingCheckoutItems && pendingCheckoutItems.length > 0) {
-                await createOrder(pendingCheckoutItems);
+                currentOrderItems = pendingCheckoutItems;
                 pendingCheckoutItems = null;
+                setTimeout(() => showOrderSummary(), 300);
             }
         }
 
@@ -1244,51 +1648,8 @@
                 return;
             }
 
-            if (addresses.length === 0) {
-                pendingCheckoutItems = itemsToBuy;
-                openAddressModal();
-                return;
-            }
-
-            // If we have addresses but no current address set, use the first one
-            if (!currentAddress && addresses.length > 0) {
-                currentAddress = addresses[0];
-            }
-
-            await createOrder(itemsToBuy);
-        }
-
-        async function createOrder(itemsToBuy) {
-            const total = itemsToBuy.reduce((sum, item) => sum + (item.price || 0), 0);
-            const customerName = currentUser?.name || 'Guest User';
-
-            const newOrder = {
-                date: new Date().toLocaleDateString(),
-                items: itemsToBuy.map(c => ({ id: c._id, name: c.name, price: c.price, breed: c.breed })),
-                total: total,
-                status: "Processing",
-                customer: customerName,
-                address: currentAddress
-            };
-
-            try {
-                await fetch(`${API_URL}/orders`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify(newOrder)
-                });
-
-                // Remove only purchased items from cart
-                cart = cart.filter(item => item.selected === false);
-                updateCartBadge();
-                saveUserState();
-                router('orders');
-                showToast('Order placed successfully!', 'success');
-            } catch (e) {
-                console.error(e);
-                showToast('Error placing order.', 'error');
-            }
+            currentOrderItems = itemsToBuy;
+            showOrderSummary();
         }
 
         function updateCartBadge() {
@@ -1305,6 +1666,7 @@
             if (status === 'Shipped') return 'bg-blue-100 text-blue-700';
             if (status === 'Delivered') return 'bg-gray-800 text-white';
             if (status === 'Processing') return 'bg-yellow-100 text-yellow-800';
+            if (status === 'Cancelled') return 'bg-red-100 text-red-700';
             return 'bg-gray-100 text-gray-800';
         }
 
