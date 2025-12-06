@@ -45,23 +45,17 @@
     <!-- Toast / popup messages -->
     <div id="toast-container" class="fixed top-4 right-4 z-40 space-y-3 pointer-events-none"></div>
 
-    <!-- Address modal (used on checkout + edit) -->
+    <!-- Address modal (used on checkout) -->
     <div id="address-modal" class="fixed inset-0 z-30 hidden items-center justify-center bg-black/60">
         <div class="bg-white rounded-2xl p-6 w-full max-w-md text-gray-800 shadow-2xl">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-semibold">Shipping Address</h3>
+                <h3 class="text-lg font-semibold" id="address-modal-title">Shipping Address</h3>
                 <button onclick="closeAddressModal()" class="text-gray-400 hover:text-gray-600">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
             <p class="text-xs text-gray-500 mb-4">Enter the address where you want to receive your livestock.</p>
             <form id="address-form" class="space-y-3" onsubmit="submitAddress(event)">
-                <div>
-                    <label class="block text-xs font-medium text-gray-700">Address Title</label>
-                    <input id="addr-title" type="text"
-                           class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                           placeholder="Home, Farm, Office" required>
-                </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-700">Full Name</label>
                     <input id="addr-name" type="text" class="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" required>
@@ -322,14 +316,6 @@
                 <div id="view-dashboard" class="space-y-6">
                     <!-- Stats Cards -->
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <!-- Total Livestock FIRST -->
-                        <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
-                            <div>
-                                <p class="text-sm text-gray-500 mb-1">Total Livestock</p>
-                                <h3 class="text-2xl font-bold text-gray-800" id="dash-total-livestock">0</h3>
-                            </div>
-                            <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xl">🐐</div>
-                        </div>
                         <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
                             <div>
                                 <p class="text-sm text-gray-500 mb-1">My Orders</p>
@@ -344,13 +330,30 @@
                             </div>
                             <div class="w-12 h-12 bg-pink-100 text-pink-600 rounded-full flex items-center justify-center text-xl">❤️</div>
                         </div>
-                        <!-- Total Spent LAST -->
                         <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
                             <div>
-                                <p class="text-sm text-gray-500 mb-1">Total Spent</p>
-                                <h3 class="text-2xl font-bold text-gray-800" id="dash-total-spent">0</h3>
+                                <p class="text-sm text-gray-500 mb-1">Cart Items</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="dash-total-cart">0</h3>
                             </div>
-                            <div class="w-12 h-12 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center text-xl">💰</div>
+                            <div class="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-xl">🛒</div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm flex justify-between items-center">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">Total Livestock</p>
+                                <h3 class="text-2xl font-bold text-gray-800" id="dash-total-livestock">0</h3>
+                            </div>
+                            <div class="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xl">🐐</div>
+                        </div>
+                    </div>
+
+                    <!-- Total Spent Card -->
+                    <div class="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="text-sm text-gray-500 mb-1">Total Spent</p>
+                                <h3 class="text-3xl font-bold text-gray-800" id="dash-total-spent">0</h3>
+                            </div>
+                            <div class="w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center text-3xl">💰</div>
                         </div>
                     </div>
 
@@ -415,9 +418,8 @@
                     <div class="bg-white p-6 rounded-xl border shadow-sm">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="font-bold text-lg">Saved Addresses</h3>
-                            <button class="text-sm text-emerald-600 hover:text-emerald-700 font-medium"
-                                    onclick="openAddressModal()">
-                                Edit / Add Address
+                            <button onclick="openAddressModal()" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition">
+                                <i data-lucide="plus" class="w-4 h-4 inline mr-1"></i> Add New
                             </button>
                         </div>
                         <div id="addresses-container" class="space-y-4">
@@ -467,11 +469,13 @@
 
         let cart = [];
         let wishlist = [];
+        let addresses = [];
         let currentCategory = 'All';
         let currentUser = null;
         let appInitialized = false;
         let currentAddress = null;
         let pendingCheckoutItems = null;
+        let editingAddressIndex = -1;
 
         // --- Toast popup ---
         function showToast(message, type = 'info') {
@@ -516,82 +520,63 @@
             }, 3000);
         }
 
-        // --- Helpers ---
+        // --- Helpers for INR formatting ---
 
         function formatINR(value) {
             const num = Number(value) || 0;
             return num.toLocaleString('en-IN');
         }
 
-        function getInitials(name) {
-            if (!name) return 'U';
-            return name
-                .split(' ')
-                .filter(Boolean)
-                .map(n => n[0].toUpperCase())
-                .join('')
-                .slice(0, 2);
-        }
+        // --- USER STATE MANAGEMENT (MongoDB) ---
 
-        // --- USER STATE (MongoDB, no localStorage) ---
-
-        async function fetchUserStateFromApi() {
-            if (!currentUser) return;
+        async function loadUserState() {
+            if (!currentUser || !currentUser.id) return;
             try {
-                const res = await fetch(`${API_URL}/user/state`, {
+                const response = await fetch(`${API_URL}/user/state`, {
                     method: 'GET',
                     credentials: 'include'
                 });
-                if (!res.ok) {
-                    console.warn('Failed to fetch user state');
-                    return;
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    cart = data.cart || [];
+                    wishlist = data.wishlist || [];
+                    addresses = data.addresses || [];
+                    
+                    // If there are addresses, set the first one as current
+                    if (addresses.length > 0) {
+                        currentAddress = addresses[0];
+                    }
+                } else {
+                    cart = [];
+                    wishlist = [];
+                    addresses = [];
+                    currentAddress = null;
                 }
-                const data = await res.json();
-                cart = Array.isArray(data.cart) ? data.cart : [];
-                wishlist = Array.isArray(data.wishlist) ? data.wishlist : [];
-                currentAddress = data.address || null;
-                orders = Array.isArray(data.orders) ? data.orders : [];
-                updateCartBadge();
-
-                // Re-render current view if needed
-                const activeOnclick = document.querySelector('.nav-item.bg-green-600')?.getAttribute('onclick') || "";
-                if (activeOnclick.includes("dashboard")) renderDashboard();
-                if (activeOnclick.includes("cart")) renderCart();
-                if (activeOnclick.includes("orders")) renderOrders();
-                if (activeOnclick.includes("wishlist")) renderWishlist();
-                if (activeOnclick.includes("addresses")) renderAddresses();
-            } catch (err) {
-                console.error('fetchUserStateFromApi error', err);
+            } catch (e) {
+                console.error('Error loading user state:', e);
+                cart = [];
+                wishlist = [];
+                addresses = [];
+                currentAddress = null;
             }
         }
 
-        async function syncUserState(partial) {
-            if (!currentUser) return;
+        async function saveUserState() {
+            if (!currentUser || !currentUser.id) return;
             try {
-                const payload = {};
-                if (partial.cart !== undefined) payload.cart = partial.cart;
-                if (partial.wishlist !== undefined) payload.wishlist = partial.wishlist;
-                if (partial.address !== undefined) payload.address = partial.address;
-
-                const res = await fetch(`${API_URL}/user/state`, {
+                const response = await fetch(`${API_URL}/user/state`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify({ cart, wishlist, addresses })
                 });
-
-                if (!res.ok) {
-                    console.warn('Failed to sync user state');
-                    return;
+                
+                if (!response.ok) {
+                    console.error('Failed to save user state');
                 }
-
-                const data = await res.json();
-                if (data.cart) cart = data.cart;
-                if (data.wishlist) wishlist = data.wishlist;
-                if (data.address !== undefined) currentAddress = data.address;
-                updateCartBadge();
-            } catch (err) {
-                console.error('syncUserState error', err);
+            } catch (e) {
+                console.error('Error saving user state:', e);
             }
         }
 
@@ -636,6 +621,16 @@
             if (!appInitialized) {
                 initApp();
             }
+        }
+
+        function getInitials(name) {
+            if (!name) return 'U';
+            return name
+                .split(' ')
+                .filter(Boolean)
+                .map(n => n[0].toUpperCase())
+                .join('')
+                .slice(0, 2);
         }
 
         function updateProfileUI() {
@@ -693,7 +688,7 @@
                 }
 
                 currentUser = data.user;
-                await fetchUserStateFromApi();
+                await loadUserState();
                 updateProfileUI();
                 updateCartBadge();
                 showToast('Logged in successfully', 'success');
@@ -732,7 +727,7 @@
                 }
 
                 currentUser = data.user;
-                await fetchUserStateFromApi();
+                await loadUserState();
                 updateProfileUI();
                 updateCartBadge();
                 showToast('Account created & logged in', 'success');
@@ -756,8 +751,8 @@
             currentUser = null;
             cart = [];
             wishlist = [];
+            addresses = [];
             currentAddress = null;
-            orders = [];
             updateCartBadge();
 
             toggleProfileMenu(false);
@@ -774,7 +769,7 @@
                 if (res.ok) {
                     const data = await res.json();
                     currentUser = data.user;
-                    await fetchUserStateFromApi();
+                    await loadUserState();
                     updateProfileUI();
                     updateCartBadge();
                     showApp();
@@ -794,10 +789,12 @@
                 const lsRes = await fetch(`${API_URL}/livestock`);
                 livestock = await lsRes.json();
 
-                // Refresh user state (orders, cart, wishlist, address) from DB
-                if (currentUser) {
-                    await fetchUserStateFromApi();
-                }
+                // Only load orders for the current user
+                const ordRes = await fetch(`${API_URL}/orders`, {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                orders = await ordRes.json();
 
                 const activeNav = document.querySelector('.nav-item.bg-green-600');
                 let currentView = 'dashboard';
@@ -860,6 +857,7 @@
             document.getElementById('dash-total-spent').innerText = formatINR(totalSpent);
             document.getElementById('dash-total-orders').innerText = orders.length;
             document.getElementById('dash-total-wishlist').innerText = wishlist.length;
+            document.getElementById('dash-total-cart').innerText = cart.length;
             document.getElementById('dash-total-livestock').innerText = livestock.length;
 
             const recentContainer = document.getElementById('dash-recent-orders');
@@ -934,15 +932,11 @@
                         </div>
                         <span class="bg-gray-800 text-white text-xs px-2 py-1 rounded">${item.tags?.[0] || 'Good'}</span>
                     </div>
-                    <div class="mt-4 flex items-center justify-between gap-2">
+                    <div class="flex items-center justify-between mt-4">
                         <span class="text-xl font-bold text-green-700">${formatINR(item.price)}</span>
                         <div class="flex gap-2">
-                            <button onclick="buyNow('${item._id}')" class="bg-emerald-600 text-white px-3 py-2 rounded-lg text-xs md:text-sm hover:bg-emerald-700 transition">
-                                Buy Now
-                            </button>
-                            <button onclick="addToCart('${item._id}')" class="bg-gray-900 text-white px-3 py-2 rounded-lg text-xs md:text-sm hover:bg-gray-800 transition">
-                                Add to Cart
-                            </button>
+                            <button onclick="buyNow('${item._id}')" class="bg-green-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-green-700 transition">Buy Now</button>
+                            <button onclick="addToCart('${item._id}')" class="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm hover:bg-gray-800 transition">Add to Cart</button>
                         </div>
                     </div>
                 </div>
@@ -1039,7 +1033,10 @@
                     <h3 class="font-bold text-lg text-gray-800">${item.name}</h3>
                     <div class="flex items-center justify-between mt-4">
                         <span class="text-xl font-bold text-green-700">${formatINR(item.price)}</span>
-                        <button onclick="addToCart('${item._id}')" class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm">Add to Cart</button>
+                        <div class="flex gap-2">
+                            <button onclick="buyNow('${item._id}')" class="bg-green-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-green-700 transition">Buy Now</button>
+                            <button onclick="addToCart('${item._id}')" class="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm">Add to Cart</button>
+                        </div>
                     </div>
                 </div>
             `).join('');
@@ -1050,66 +1047,67 @@
             const container = document.getElementById('addresses-container');
             if (!container) return;
 
-            if (!currentAddress) {
+            if (addresses.length === 0) {
                 container.innerHTML = `
                     <div class="text-sm text-gray-500 bg-gray-50 border border-dashed border-gray-200 rounded-lg p-4">
-                        No saved addresses yet. An address will be saved here when you buy a product or add one.
+                        No saved addresses yet. Add an address to use during checkout.
                     </div>
                 `;
                 return;
             }
 
-            const a = currentAddress;
-            const title = a.title || 'Saved Address';
-
-            container.innerHTML = `
+            container.innerHTML = addresses.map((a, index) => `
                 <div class="border rounded-lg p-4 bg-gray-50">
                     <div class="flex justify-between items-start mb-2">
                         <div>
-                            <p class="font-semibold text-gray-800">${title} - ${a.pincode}</p>
-                            <p class="text-xs text-gray-500">${a.city}, ${a.state}</p>
-                            <p class="text-xs text-gray-500 mt-1">Name: ${a.name} • +91 ${a.phone}</p>
+                            <p class="font-semibold text-gray-800">${a.name}</p>
+                            <p class="text-xs text-gray-500">+91 ${a.phone}</p>
                         </div>
-                        <button class="text-xs text-emerald-600 hover:text-emerald-700 font-medium"
-                                onclick="openAddressModal()">
-                            Edit
-                        </button>
+                        <div class="flex gap-2">
+                            <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">${a.label || 'Default'}</span>
+                            <button onclick="editAddress(${index})" class="text-blue-500 hover:bg-blue-50 p-1 rounded">
+                                <i data-lucide="edit" class="w-4 h-4"></i>
+                            </button>
+                        </div>
                     </div>
-                    <p class="text-sm text-gray-700">${a.line}</p>
+                    <p class="text-sm text-gray-700">${a.line1 || a.line}</p>
+                    ${a.line2 ? `<p class="text-sm text-gray-700">${a.line2}</p>` : ''}
+                    <p class="text-sm text-gray-700 mt-1">${a.city}, ${a.state} - ${a.pincode}</p>
                 </div>
-            `;
+            `).join('');
+            lucide.createIcons();
         }
 
         // --- CART / WISHLIST / CHECKOUT ACTIONS ---
 
-        async function addToCart(id) {
+        function addToCart(id) {
             const item = livestock.find(i => i._id === id);
             if (item) {
-                const cartItem = { id: item._id, name: item.name, breed: item.breed, price: item.price, image: item.image, selected: true };
+                const cartItem = { ...item, selected: true };
                 cart.push(cartItem);
                 updateCartBadge();
-                await syncUserState({ cart });
+                saveUserState();
                 showToast(`${item.name} added to cart`, 'success');
                 const active = document.querySelector('.nav-item.bg-green-600')?.getAttribute('onclick') || '';
                 if (active.includes('dashboard')) renderDashboard();
             }
         }
 
-        async function removeFromCart(index) {
+        function removeFromCart(index) {
             cart.splice(index, 1);
             renderCart();
             updateCartBadge();
-            await syncUserState({ cart });
+            saveUserState();
         }
 
-        async function toggleCartSelection(index, checked) {
+        function toggleCartSelection(index, checked) {
             if (!cart[index]) return;
             cart[index].selected = checked;
-            await syncUserState({ cart });
+            saveUserState();
             renderCart();
         }
 
-        async function toggleWishlist(id) {
+        function toggleWishlist(id) {
             const index = wishlist.indexOf(id);
             if (index === -1) {
                 wishlist.push(id);
@@ -1118,36 +1116,52 @@
                 wishlist.splice(index, 1);
                 showToast('Removed from wishlist', 'info');
             }
-            await syncUserState({ wishlist });
+            saveUserState();
             const active = document.querySelector('.nav-item.bg-green-600')?.getAttribute('onclick') || '';
             if (active.includes('wishlist')) renderWishlist();
             if (active.includes('browse')) renderBrowse();
             if (active.includes('dashboard')) renderDashboard();
         }
 
-        function getShippingAddress() {
-            return currentAddress || null;
+        function buyNow(id) {
+            const item = livestock.find(i => i._id === id);
+            if (item) {
+                // Add to cart and proceed to checkout
+                const cartItem = { ...item, selected: true };
+                cart = [cartItem]; // Replace cart with just this item
+                updateCartBadge();
+                saveUserState();
+                showToast(`${item.name} added to cart`, 'success');
+                router('cart');
+                setTimeout(() => checkout(), 500);
+            }
         }
 
-        function openAddressModal(itemsToBuy) {
-            pendingCheckoutItems = itemsToBuy || null;
+        function openAddressModal(index) {
+            editingAddressIndex = index !== undefined ? index : -1;
             const modal = document.getElementById('address-modal');
+            const title = document.getElementById('address-modal-title');
+            
             if (!modal) return;
-            const hasAddress = !!currentAddress;
-            if (hasAddress) {
-                document.getElementById('addr-title').value = currentAddress.title || 'Home';
-                document.getElementById('addr-name').value = currentAddress.name || '';
-                document.getElementById('addr-phone').value = currentAddress.phone || '';
-                document.getElementById('addr-line').value = currentAddress.line || '';
-                document.getElementById('addr-city').value = currentAddress.city || '';
-                document.getElementById('addr-state').value = currentAddress.state || '';
-                document.getElementById('addr-pincode').value = currentAddress.pincode || '';
+            
+            if (editingAddressIndex >= 0 && addresses[editingAddressIndex]) {
+                // Edit mode
+                title.innerText = 'Edit Address';
+                const a = addresses[editingAddressIndex];
+                document.getElementById('addr-name').value = a.name || '';
+                document.getElementById('addr-phone').value = a.phone || '';
+                document.getElementById('addr-line').value = a.line1 || a.line || '';
+                document.getElementById('addr-city').value = a.city || '';
+                document.getElementById('addr-state').value = a.state || '';
+                document.getElementById('addr-pincode').value = a.pincode || '';
             } else {
+                // Add mode
+                title.innerText = 'Add New Address';
                 document.getElementById('address-form').reset();
             }
+            
             modal.classList.remove('hidden');
             modal.classList.add('flex');
-            lucide.createIcons();
         }
 
         function closeAddressModal() {
@@ -1155,12 +1169,15 @@
             if (!modal) return;
             modal.classList.add('hidden');
             modal.classList.remove('flex');
-            pendingCheckoutItems = null;
+            editingAddressIndex = -1;
+        }
+
+        function editAddress(index) {
+            openAddressModal(index);
         }
 
         async function submitAddress(event) {
             event.preventDefault();
-            const title = document.getElementById('addr-title').value.trim();
             const name = document.getElementById('addr-name').value.trim();
             const phone = document.getElementById('addr-phone').value.trim();
             const line = document.getElementById('addr-line').value.trim();
@@ -1168,7 +1185,7 @@
             const state = document.getElementById('addr-state').value.trim();
             const pincode = document.getElementById('addr-pincode').value.trim();
 
-            if (!title || !name || !phone || !line || !city || !state || !pincode) {
+            if (!name || !phone || !line || !city || !state || !pincode) {
                 showToast('Please fill all address fields.', 'warning');
                 return;
             }
@@ -1181,11 +1198,34 @@
                 return;
             }
 
-            currentAddress = { title, name, phone, line, city, state, pincode };
-            await syncUserState({ address: currentAddress });
+            const addressData = { 
+                name, 
+                phone, 
+                line1: line, 
+                city, 
+                state, 
+                pincode,
+                label: addresses.length === 0 ? 'Default' : `Address ${addresses.length + 1}`
+            };
+
+            if (editingAddressIndex >= 0) {
+                // Update existing address
+                addresses[editingAddressIndex] = { ...addresses[editingAddressIndex], ...addressData };
+                showToast('Address updated', 'success');
+            } else {
+                // Add new address
+                addresses.push(addressData);
+                showToast('Address added', 'success');
+            }
+
+            // Set current address if none is set
+            if (!currentAddress || editingAddressIndex === 0) {
+                currentAddress = addresses[0];
+            }
+
+            saveUserState();
             renderAddresses();
             closeAddressModal();
-            showToast('Address saved', 'success');
 
             if (pendingCheckoutItems && pendingCheckoutItems.length > 0) {
                 await createOrder(pendingCheckoutItems);
@@ -1204,55 +1244,27 @@
                 return;
             }
 
-            const addr = getShippingAddress();
-            if (!addr) {
-                openAddressModal(itemsToBuy);
+            if (addresses.length === 0) {
+                pendingCheckoutItems = itemsToBuy;
+                openAddressModal();
                 return;
             }
 
-            await createOrder(itemsToBuy);
-        }
-
-        async function buyNow(id) {
-            const item = livestock.find(i => i._id === id);
-            if (!item) return;
-
-            const itemsToBuy = [{
-                id: item._id,
-                name: item.name,
-                breed: item.breed,
-                price: item.price
-            }];
-
-            // if no address, open modal and checkout after saving
-            const addr = getShippingAddress();
-            if (!addr) {
-                openAddressModal(itemsToBuy);
-                return;
+            // If we have addresses but no current address set, use the first one
+            if (!currentAddress && addresses.length > 0) {
+                currentAddress = addresses[0];
             }
 
             await createOrder(itemsToBuy);
         }
 
         async function createOrder(itemsToBuy) {
-            const formattedItems = itemsToBuy.map(c => ({
-                id: c.id || c._id,
-                name: c.name,
-                price: c.price,
-                breed: c.breed
-            }));
-
-            const total = formattedItems.reduce((sum, item) => sum + (item.price || 0), 0);
+            const total = itemsToBuy.reduce((sum, item) => sum + (item.price || 0), 0);
             const customerName = currentUser?.name || 'Guest User';
 
-            if (!currentAddress) {
-                showToast('Address missing. Please add address.', 'warning');
-                return;
-            }
-
             const newOrder = {
-                date: new Date().toLocaleDateString('en-IN'),
-                items: formattedItems,
+                date: new Date().toLocaleDateString(),
+                items: itemsToBuy.map(c => ({ id: c._id, name: c.name, price: c.price, breed: c.breed })),
                 total: total,
                 status: "Processing",
                 customer: customerName,
@@ -1260,25 +1272,17 @@
             };
 
             try {
-                const res = await fetch(`${API_URL}/orders`, {
+                await fetch(`${API_URL}/orders`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify(newOrder)
                 });
 
-                if (!res.ok) {
-                    throw new Error('Order API error');
-                }
-
-                // Remove purchased items from cart if they exist there
-                const boughtIds = new Set(formattedItems.map(i => i.id));
-                cart = cart.filter(item => !boughtIds.has(item.id) || item.selected === false);
-                await syncUserState({ cart });
-
-                // Refresh orders from DB so only this user's orders show
-                await fetchUserStateFromApi();
-
+                // Remove only purchased items from cart
+                cart = cart.filter(item => item.selected === false);
+                updateCartBadge();
+                saveUserState();
                 router('orders');
                 showToast('Order placed successfully!', 'success');
             } catch (e) {
