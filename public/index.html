@@ -64,7 +64,7 @@
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
-            <p class="text-xs text-gray-500 mb-4">Enter the address where you want to receive your livestock.</p>
+            <p class="text-xs text-gray-500 mb-4">Enter address where you want to receive your livestock.</p>
             <form id="address-form" class="space-y-3" onsubmit="submitAddress(event)">
                 <div>
                     <label class="block text-xs font-medium text-gray-700">Full Name</label>
@@ -616,6 +616,7 @@
     </div>
 
     <script>
+        // --- Base API URL for Vercel same-origin backend ---
         const API_URL = '/api';
 
         let livestock = [];
@@ -633,6 +634,17 @@
         let selectedPaymentMethod = null;
         let currentOrderItems = [];
 
+        // --- Safely refresh Lucide icons (no crash if CDN blocked) ---
+        function refreshIcons() {
+            try {
+                if (window.lucide && typeof window.lucide.createIcons === 'function') {
+                    window.lucide.createIcons();
+                }
+            } catch (e) {
+                console.warn('Could not refresh Lucide icons:', e);
+            }
+        }
+
         // --- Toast popup ---
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
@@ -646,12 +658,31 @@
                 warning: 'bg-yellow-500 text-black',
                 info: 'bg-gray-800 text-white'
             };
-            const icon = {
-                success: 'check-circle',
-                error: 'alert-triangle',
-                warning: 'alert-circle',
-                info: 'info'
-            }[type] || 'info';
+            
+            // Use fallback icons if lucide is not available
+            let iconHtml = '';
+            try {
+                const icon = {
+                    success: 'check-circle',
+                    error: 'alert-triangle',
+                    warning: 'alert-circle',
+                    info: 'info'
+                }[type] || 'info';
+                
+                if (window.lucide) {
+                    iconHtml = `<i data-lucide="${icon}" class="w-4 h-4"></i>`;
+                } else {
+                    const fallbackIcons = {
+                        success: '✓',
+                        error: '⚠',
+                        warning: '⚠',
+                        info: 'ℹ'
+                    };
+                    iconHtml = `<span class="text-lg">${fallbackIcons[type] || fallbackIcons.info}</span>`;
+                }
+            } catch (e) {
+                iconHtml = `<span class="text-lg">ℹ</span>`;
+            }
 
             const div = document.createElement('div');
             div.id = id;
@@ -659,7 +690,7 @@
 
             div.innerHTML = `
                 <div class="mt-0.5">
-                    <i data-lucide="${icon}" class="w-4 h-4"></i>
+                    ${iconHtml}
                 </div>
                 <div class="flex-1">${message}</div>
                 <button onclick="document.getElementById('${id}')?.remove()" class="ml-2 text-xs opacity-80 hover:opacity-100">
@@ -668,7 +699,7 @@
             `;
 
             container.appendChild(div);
-            lucide.createIcons();
+            refreshIcons();
 
             setTimeout(() => {
                 div.classList.add('opacity-0', 'translate-x-2');
@@ -938,14 +969,13 @@
             }
         }
 
-        // --- DATA LOADING ---
-
+        // --- DATA LOADING (per-user data from backend) ---
         async function loadData() {
             try {
                 const lsRes = await fetch(`${API_URL}/livestock`);
                 livestock = await lsRes.json();
 
-                // Only load orders for current user
+                // Only load orders for current logged-in user (backend must filter by user)
                 const ordRes = await fetch(`${API_URL}/orders`, {
                     method: 'GET',
                     credentials: 'include'
@@ -1003,7 +1033,7 @@
             if (viewName === 'wishlist') renderWishlist();
             if (viewName === 'addresses') renderAddresses();
 
-            lucide.createIcons();
+            refreshIcons();
         }
 
         // --- RENDER FUNCTIONS ---
@@ -1120,7 +1150,7 @@
                     </div>
                 </div>
             `}).join('');
-            lucide.createIcons();
+            refreshIcons();
         }
 
         function renderCart() {
@@ -1163,7 +1193,7 @@
             
             totalEl.innerText = formatINR(total);
             titleEl.innerText = `(${cart.length} items)`;
-            lucide.createIcons();
+            refreshIcons();
         }
 
         function renderOrders() {
@@ -1239,7 +1269,7 @@
                     </div>
                 </div>
             `).join('');
-            lucide.createIcons();
+            refreshIcons();
         }
 
         function renderAddresses() {
@@ -1259,8 +1289,8 @@
                 <div class="border rounded-lg p-4 bg-gray-50">
                     <div class="flex justify-between items-start mb-2">
                         <div>
-                            <p class="font-semibold text-gray-800">${a.name}</p>
-                            <p class="text-xs text-gray-500">+91 ${a.phone}</p>
+                            <p class="font-semibold text-gray-800">${a.label || 'Address'} • ${a.pincode}</p>
+                            <p class="text-xs text-gray-500">${a.name} • +91 ${a.phone}</p>
                         </div>
                         <div class="flex gap-2">
                             <span class="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">${a.label || 'Default'}</span>
@@ -1274,7 +1304,7 @@
                     <p class="text-sm text-gray-700 mt-1">${a.city}, ${a.state} - ${a.pincode}</p>
                 </div>
             `).join('');
-            lucide.createIcons();
+            refreshIcons();
         }
 
         // --- CART / WISHLIST / CHECKOUT ACTIONS ---
@@ -1392,10 +1422,11 @@
             selectedPaymentMethod = null;
             document.querySelectorAll('.payment-option').forEach(opt => {
                 opt.classList.remove('selected');
-                opt.querySelector('input[type="radio"]').checked = false;
+                const input = opt.querySelector('input[type="radio"]');
+                if (input) input.checked = false;
             });
 
-            lucide.createIcons();
+            refreshIcons();
         }
 
         function closeOrderSummary() {
@@ -1415,14 +1446,16 @@
             selectedPaymentMethod = method;
             document.querySelectorAll('.payment-option').forEach(opt => {
                 opt.classList.remove('selected');
-                opt.querySelector('input[type="radio"]').checked = false;
+                const input = opt.querySelector('input[type="radio"]');
+                if (!input) return;
+                if (input.value === method) {
+                    opt.classList.add('selected');
+                    input.checked = true;
+                } else {
+                    opt.classList.remove('selected');
+                    input.checked = false;
+                }
             });
-            
-            const selectedOption = document.querySelector(`.payment-option:has(input[value="${method}"])`);
-            if (selectedOption) {
-                selectedOption.classList.add('selected');
-                selectedOption.querySelector('input[type="radio"]').checked = true;
-            }
         }
 
         async function confirmOrder() {
@@ -1465,7 +1498,7 @@
 
             modal.classList.remove('hidden');
             modal.classList.add('flex');
-            lucide.createIcons();
+            refreshIcons();
         }
 
         function closePaymentModal() {
@@ -1743,7 +1776,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             attachEventListeners();
             checkAuth();
-            lucide.createIcons();
+            refreshIcons();
         });
     </script>
 </body>
